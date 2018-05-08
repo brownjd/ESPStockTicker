@@ -1,0 +1,46 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>ESP Quote Machine</title>
+        <meta name="viewport" content="width=300px, initial-scale=1"/>
+        <script type='text/javascript'>
+            function getData()
+            {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if(this.readyState == 4 && this.status == 200) {
+                        var root = JSON.parse(this.responseText);
+                        console.log(root);
+                        document.getElementById("ip").innerHTML = root.ip;
+                        document.getElementById("hostname").innerHTML = "http://"+root.hostname+".local/";
+                        form = document.getElementById("tickers");
+                        for(i = 0; i < root.tickers.length; i++)
+                        {
+                            var input = document.createElement("input");
+                            input.name = "ticker";
+                            input.value = root.tickers[i];
+                            form.appendChild(input);
+                            form.appendChild(document.createElement("br"));
+                        }
+                        var submit = document.createElement("input");
+                        submit.type = "submit";
+                        submit.value = "Submit";
+                        form.appendChild(submit);
+                    }
+                };
+                xhttp.open("GET", "/gettickers", true);
+                xhttp.send();
+            }
+        </script>
+    </head>
+    <body onload="getData()">
+        <h3>Hostname: <span id="hostname"></span></h3>
+        <h5>IP Address: <span id="ip"></span></h5>
+        <h3>Stock Symbols:</h3>
+        <h5>The first ticker will be used to display the daily price chart</h5>
+        <form method="POST" id="tickers" action="/settickers">
+            <!-- script to dynamically create a list of these -->
+            <!-- <input type="text" name="ticker" value=""><br/>-->
+        </form>
+    </body>
+</html>

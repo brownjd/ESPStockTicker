@@ -1,0 +1,87 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>ESP Quote Machine WIFI Setup</title>
+        <meta name="viewport" content="width=300px, initial-scale=1"/>
+        <script type='text/javascript'>
+            function getData()
+            {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if(this.readyState == 4 && this.status == 200) {
+                        var root = JSON.parse(this.responseText);
+                        console.log(root);
+                        
+                        var table = document.getElementById("wifitable");
+                        for(i = 0; i < root.networks.length; i++)
+                        {
+                            var row = document.createElement("tr");
+                            var cell0 = document.createElement("td");
+                            var cell1 = document.createElement("td");
+                            var cell2 = document.createElement("td");
+
+                            var span0 = document.createElement("span");
+                            span0.innerHTML = i;
+                            cell0.appendChild(span0);
+                            
+                            var span1 = document.createElement("span");
+                            span1.innerHTML = root.networks[i];
+                            cell1.appendChild(span1);
+                            
+                            var button = document.createElement("input");
+                            button.type = "button";
+                            button.name = i;
+                            button.value = "Delete";
+                            button.addEventListener("click", submitFrm, false);
+                            cell2.appendChild(button);
+
+                            row.appendChild(cell0);
+                            row.appendChild(cell1);
+                            row.appendChild(cell2);
+                            table.appendChild(row);
+                        }
+    
+                        var sel = document.getElementById("pos");
+                        for(i = 0; i < root.MaxWifiNetworks; i++)
+                        {
+                            var opt = document.createElement("option");
+                            opt.innerHTML = "Position: " + i;
+                            opt.value = i;
+                            sel.appendChild(opt);
+                        }
+                    }
+                };
+                xhttp.open("GET", "/getwifi", true);
+                xhttp.send();
+            }
+            function submitFrm(e)
+            {
+                console.log("Deleting network: " + e.target.name);
+                document.getElementById("wifitodelete").value = e.target.name;
+                document.getElementById("networks").submit();
+            }
+        </script>
+    </head>
+    <body onload="getData()">
+        <br/>
+        <h3>Wifi Configuration</h3>
+        <h3>Networks</h3>
+        <form method="POST" id="networks" action="/setwifi">
+            <table id="wifitable" border="1px" padding="0px">
+                <tr>
+                    <th>Position</th>
+                    <th>SSID Name</th>
+                    <th></th>
+                </tr>
+            </table>
+            <input id="wifitodelete" type="hidden" name="delete" value="">
+        </form>
+        <br>
+        <form method="POST" action="/setwifi">
+            <span>SSID: </span><input name="ssid" type="text"><br>
+            <span>PW:   </span><input name="pass" type="text"><br>
+            <span>Slot: </span><select id="pos" name="pos"><br>
+            <input type="submit" value"Add Network">
+        </form>
+    </body>
+</html>
