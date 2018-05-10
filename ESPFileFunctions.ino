@@ -27,6 +27,13 @@ int readWifiInfo(char wifis[][2][96])
     temp[0] = '\0';
   }
   f.close();
+
+  while(wifiNo < MAX_WIFI_NETWORKS)
+  {
+    wifis[wifiNo][0][0] = '\0';
+    wifis[wifiNo][1][0] = '\0';
+    wifiNo++;
+  }
   
   Serial.println(F("readWifiInfo()...done"));
   return wifiNo;
