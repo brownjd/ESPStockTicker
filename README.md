@@ -33,7 +33,7 @@ After the ESP restarts it will begin by looking for known WIFI networks. If it c
 
 After you save your changes, the ESP should pick up the new settings and try to connect. Once it is connected, it will display its mDNS hostname after looking for any name collisions. You can access this URL with a browser on an mDNS aware platform (Linux, Mac OS, IOS). Generally this will be [http://esp.local]. This page will allow you to specify your stock tickers to track. The first ticker will be used to print the chart for the day. 
 
-![EnterStocksScreenShot][enterstocks.png]
+![EnterStocksScreenShot](enterstocks.png)
 
 # Eagle Files
 
