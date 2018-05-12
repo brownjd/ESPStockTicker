@@ -37,6 +37,10 @@ After you save your changes, the ESP should pick up the new settings and try to 
 
 # Eagle Files
 
+If you want to print the PCB, I recommend https://oshpark.com. 
+
+[https://github.com/brownjd/ESP8266-TFT-PCB]
+
 # 3D Printed Box
 
 The design for the case is hosted here: [https://cad.onshape.com/documents/baf6f8920e0056c74aa33163/w/9b8db8e1d71b7267bfcf4cd1/e/1de548e62555208ea106f9fa]
