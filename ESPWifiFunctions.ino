@@ -3,31 +3,33 @@ WiFiEventHandler gotIPEventHandler, disconnectedEventHandler;
 void updateHostName()
 {
   Serial.println(F("updateHostName()..."));
-  
-  printMsg(F("Checking MDNS host names."), true);
-  int n = MDNS.queryService(F("http"), F("tcp"));
-  
-  char testName [20];
-  strncpy(testName, hostName, 20);
-  
-  for(int i = 0; i < n; i++)
+  if(WiFi.status() == WL_CONNECTED)
   {
-    printMsg(MDNS.hostname(i).c_str());
-    if((MDNS.hostname(i).equals(testName)))
+    printMsg(F("Checking MDNS host names."), true);
+    int n = MDNS.queryService(F("http"), F("tcp"));
+    
+    char testName [20];
+    strncpy(testName, hostName, 20);
+    
+    for(int i = 0; i < n; i++)
     {
-      sprintf(testName, "%s-%d", testName, i);
+      printMsg(MDNS.hostname(i).c_str());
+      if((MDNS.hostname(i).equals(testName)))
+      {
+        sprintf(testName, "%s-%d", testName, i);
+      }
     }
+    //set our new hostname
+    strncpy(hostName, testName, 20);
+    Serial.print(F("New hostname: "));
+    Serial.println(hostName);
   }
-  //set our new hostname
-  strncpy(hostName, testName, 20);
-  Serial.print(F("New hostname: "));
-  Serial.println(hostName);
   Serial.println(F("updateHostName()...done"));
 }
 
-void setupIP()
+void setupIPHandlers()
 {
-  Serial.println(F("setupIP()..."));
+  Serial.println(F("setupIPHandlers()..."));
   gotIPEventHandler = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP& event)
   {
     (void) event;
@@ -47,68 +49,77 @@ void setupIP()
     (void) event;
     
     Serial.println(F("onStationModeDisconnected.().."));
-    printWifiInfo(true);
-    startSoftAP();
+    printWifiInfo(false);
     MDNS.notifyAPChange();
     Serial.println(F("onStationModeDisconnected()...done"));
   });
-
-  WiFi.mode(WIFI_AP_STA);
   
-  Serial.println(F("setupIP()...done"));
+  Serial.println(F("setupIPHandlers()...done"));
 }
 
 void startSoftAP()
 {
   Serial.println(F("startSoftAP()..."));
+  if(WiFi.status() != WL_CONNECTED)
+  {
+    WiFi.mode(WIFI_AP);
+    //Serial.print(F("Number of softAP connections: "));
+    //Serial.println(WiFi.softAPgetStationNum());
+      
+    Serial.print(F("Starting softAP: "));
+    Serial.println(SOFT_AP_NAME);
+    
+    WiFi.softAP(SOFT_AP_NAME);
+    
+    Serial.print(F("Soft-AP IPAddress: "));
+    Serial.println(WiFi.softAPIP());
   
-  Serial.print(F("Starting softAP: "));
-  Serial.println(SOFT_AP_NAME);
-  WiFi.softAP(SOFT_AP_NAME);
-  
-  char msg [170];
-  printMsg(F("Wifi not connected."), true);
-  sprintf(msg, "Connect to '%s'", SOFT_AP_NAME);
-  printMsg(msg);
-  printMsg(F("WIFI network. Then open"));
-  sprintf(msg, "http://%s.local/wifi", hostName);
-  printMsg(msg);
-  printMsg(F("to configure settings."));
+    char msg [170];
+    printMsg(F("Wifi not connected."), true);
+    sprintf(msg, "Connect to '%s'", SOFT_AP_NAME);
+    printMsg(msg);
+    printMsg(F("WIFI network. Then open"));
+    sprintf(msg, "http://%s.local/wifi", hostName);
+    printMsg(msg);
+    printMsg(F("to configure settings."));
+  }
   Serial.println(F("startSoftAP()...done"));
 }
 
 void connectWifi()
 {
   Serial.println(F("connectWifi()..."));
-
+  //clear saved credentials
+  
   //[ssid][password]
-// 5 rows with 2 columns (64+32) wide
+  // 5 rows with 2 columns (64+32) wide
   char wifis[MAX_WIFI_NETWORKS][2][96];
 
   int networks = readWifiInfo(wifis);
-  if(!networks)
+  if(networks)
   {
-    startSoftAP();
-  }
-  
-  char msg [50];
-
-  for(int i = 0; i < MAX_WIFI_NETWORKS && WiFi.status() != WL_CONNECTED; i++)
-  {
-    if(strlen(wifis[i][0]))
+    //no point in trying to connect if empty
+    char msg [50];
+    WiFi.mode(WIFI_STA);
+    for(int i = 0; i < MAX_WIFI_NETWORKS && WiFi.status() != WL_CONNECTED; i++)
     {
-      sprintf(msg, "Connecting to %s", wifis[i][0]);
-      printMsg(msg, true);
-      Serial.println(msg);
-      WiFi.begin(wifis[i][0], wifis[i][1]);
-      yield();
-      for(int j = 0; (j < MAX_WIFI_TIMEOUT) && (WiFi.status() != WL_CONNECTED); j++) 
+      if(strlen(wifis[i][0]))
       {
-        delay(500);
-        //printMsg(".");
+        sprintf(msg, "Connecting to %s", wifis[i][0]);
+        printMsg(msg, true);
+        Serial.println(msg);
+        WiFi.begin(wifis[i][0], wifis[i][1]);
+        yield();
+        for(int j = 0; (j < MAX_WIFI_TIMEOUT) && (WiFi.status() != WL_CONNECTED); j++) 
+        {
+          delay(1000);
+          printMsg(".");
+        }
       }
     }
   }
+  setupMDNS();
+  startSoftAP();
   Serial.println(F("connectWifi()...done"));
 }
 
@@ -118,7 +129,6 @@ void setupMDNS()
   if(MDNS.begin(hostName))
   {
     //Check if our hostname is already in use
-    
     updateHostName();
 
     //update wifi

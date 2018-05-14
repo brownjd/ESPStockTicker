@@ -118,7 +118,6 @@ void setWifi()
 
   writeWifiFile(wifis);
   httpServer.send(200, "text/html", "<html><head><script>window.location.replace(\"/wifi\");</script></head><body/></html>");
-  
   Serial.println("setWifi()...done");
 }
 
@@ -152,11 +151,11 @@ void queryPrices()
 {
   Serial.println(F("queryPrices()..."));
  
-  //BASE_URL = "/1.0/stock/market/batch?filter=symbol,latestPrice,changePercent&types=quote&displayPercent=true&symbols=";
+  //PRICING_CHART_URL = "/1.0/stock/market/batch?filter=symbol,latestPrice,changePercent&types=quote&displayPercent=true&symbols=";
   quoteRequestBuffer[0] = '\0';
   
   //insert prefix
-  strcpy(quoteRequestBuffer, BASE_URL);
+  strcpy(quoteRequestBuffer, PRICING_CHART_URL);
 
   bool tickersFound = false;
   //iterate over tickers looking for non-empty entries
@@ -177,9 +176,12 @@ void queryPrices()
     Serial.println(quoteRequestBuffer);
    
     //tack on the rest of the HTTP GET request
-    strcat(quoteRequestBuffer, HTTP_GET_SUFFIX);
+    strcat(quoteRequestBuffer, IEX_GET_SUFFIX);
 
-    persistJSONRequest(quoteRequestBuffer, PRICING_FILE);
+    if(!bufferToFile(IEX_HOST, quoteRequestBuffer, PRICING_FILE))
+    {
+      sinceAPIUpdate = MAX_API_INTERVAL;
+    }
   }
   else
   {
@@ -191,68 +193,6 @@ void queryPrices()
   Serial.println(F("queryPrices()...done")); 
 }
 
-void updatePrices()
-{
-  Serial.println(F("updatePrices()..."));
-  File f = SPIFFS.open(PRICING_FILE, "r");
-  Serial.print(F("Price file size: "));
-  Serial.println(f.size());
-  Serial.print("Free heap before pricing: ");
-  Serial.println(ESP.getFreeHeap());
-  DynamicJsonBuffer jsonBuffer(ESP.getFreeHeap() - WORKING_HEAP);
-  JsonObject &jsonQuotes = jsonBuffer.parseObject(f);
-  Serial.print("Free heap after pricing: ");
-  Serial.println(ESP.getFreeHeap());
-  //jsonQuotes.printTo(Serial);
-  
-  for(int tickerNum = 0; tickerNum < TICKER_COUNT; tickerNum++)
-  {
-    yield();
-    char *ticker = tickers[tickerNum];
-    prices[tickerNum][0] = 0.0;
-    prices[tickerNum][1] = 0.0;
-    
-    if(ticker[0])
-    {
-      //Serial.print(F("Retrieving pricing for: "));
-      //Serial.println(ticker);
-      JsonObject &quoteItem = jsonQuotes[ticker][F("quote")];
-      //quoteItem.printTo(Serial);
-      if(quoteItem.success())
-      {
-        const char* symbol = quoteItem[F("symbol")];
-        float price = quoteItem[F("latestPrice")];
-        float change = quoteItem[F("changePercent")];
-    
-        prices[tickerNum][0] = price;
-        prices[tickerNum][1] = change;
-    
-        //Serial.print(symbol);
-        //Serial.print(F(" "));
-        //Serial.print(price);
-        //Serial.print(F(" "));
-        //Serial.println(change);
-      }
-      else
-      {
-        String s  = F("JSON deserialization error.");
-        Serial.println(s);
-        printStatusMsg(s);
-        Serial.print("With ticker: ");
-        Serial.println(ticker);
-        sinceAPIUpdate = MAX_API_INTERVAL;
-        //f.seek(0, SeekSet);
-        //Serial.println(f.readString());
-      }
-    }
-  }
-  f.seek(0, SeekSet);
-  Serial.println(f.readString());
-  f.close();
-  
-  Serial.println(F("updatePrices()...done"));
-}
-
 void queryChartInfo()
 {
   Serial.println(F("queryChartInfo()..."));
@@ -261,87 +201,47 @@ void queryChartInfo()
   quoteRequestBuffer[0] = '\0';
 
   sprintf(quoteRequestBuffer, BASE_CHART_URL, tickers[0], CHART_INTERVAL);
-  //insert prefix
-  //strcpy(quoteRequestBuffer, url.c_str());
 
   Serial.print(F("API Chart GET URL: "));
   Serial.println(quoteRequestBuffer);
 
   //tack on the rest of the HTTP GET request
-  strcat(quoteRequestBuffer, HTTP_GET_SUFFIX);
+  strcat(quoteRequestBuffer, IEX_GET_SUFFIX);
 
-  persistJSONRequest(quoteRequestBuffer, CHART_FILE);
+  if(!bufferToFile(IEX_HOST, quoteRequestBuffer, CHART_FILE))
+  {
+    sinceAPIUpdate = MAX_API_INTERVAL;
+  }
   
   Serial.println(F("queryChartInfo()...done")); 
 }
 
-
-void updateChartInfo()
+void checkAvailableFirmwareVersion()
 {
-  Serial.println(F("updateChartInfo()..."));
+  Serial.println(F("checkAvailableFirmwareVersion()..."));
 
-  File f = SPIFFS.open(CHART_FILE, "r");
-  Serial.print(F("Chart file size: "));
-  Serial.println(f.size());
-  Serial.print(F("Free heap before chart: "));
-  Serial.println(ESP.getFreeHeap());
+  quoteRequestBuffer[0] = '\0';
+  strcat(quoteRequestBuffer, FW_VERSION_URL);
+  strcat(quoteRequestBuffer, FW_GET_SUFFIX);
+
+  Serial.print(F("Firmware version GET URL: "));
+  Serial.println(quoteRequestBuffer);
   
-  DynamicJsonBuffer jsonBuffer(ESP.getFreeHeap() - WORKING_HEAP);
-  JsonArray &jsonChart = jsonBuffer.parseArray(f);
+  bufferToFile(FIRMWARE_HOST, quoteRequestBuffer, FW_REMOTE_VERSION_FILE);
   
-  Serial.print(F("Free heap after chart: "));
-  Serial.println(ESP.getFreeHeap());
-  yield();
-  
-  if(jsonChart.success())
-  {    
-    int size = jsonChart.size();
-    
-    for(int i = 0; i < MAX_CHART_POINTS && i < size; i++)
-    {
-      yield();
-      const char *ticker = tickers[i];
-      JsonVariant timeSlot = jsonChart[i];
-    
-      //const char* symbol = tickerItem["symbol"];
-      //String minute = timeSlot[F("minute")];
-      float price = timeSlot[F("average")];
-  
-      chartinfo[i] = price;
-  
-      //Serial.print(i);
-      //Serial.print(F(" "));
-      //Serial.print(minute);
-      //Serial.print(F(" "));
-      //Serial.println(price);
-    }
-  }
-  else
-  {
-    String s  = F("JSON deserialization error.");
-    Serial.println(s);
-    printStatusMsg(s);
-    sinceAPIUpdate = MAX_API_INTERVAL;
-    //f.seek(0, SeekSet);
-    //Serial.println(f.readString());
-  }
-  
-  f.seek(0, SeekSet);
-  Serial.println(f.readString());
-  f.close();
-      
-  Serial.println(F("updateChartInfo()...done"));
+  Serial.println(F("checkAvailableFirmwareVersion()...done"));
 }
 
-bool persistJSONRequest(const char *buf, const char* filename)
+
+bool bufferToFile(const char *host, const char *buf, const char* filename)
 {
   WiFiClientSecure client;
   client.setTimeout(CLIENT_TIMEOUT);
   
-  if(client.connect(HOST, HTTPS_PORT))
+  if(client.connect(host, HTTPS_PORT))
   {
     yield();
-      //make the request
+    //make the request
     client.print(buf);
 
     //dispense with the headers we don't want
@@ -357,7 +257,7 @@ bool persistJSONRequest(const char *buf, const char* filename)
 
     //get the data    
     int size = client.available();
-    Serial.print(F("API response size: "));
+    Serial.print(F("HTTP response size: "));
     Serial.println(size);
     
     if (size)
@@ -368,23 +268,24 @@ bool persistJSONRequest(const char *buf, const char* filename)
     }
     else
     {
-      String s = F("No data in the API response.");
+      String s = F("Empty HTTP response.");
       Serial.println(s);
       printStatusMsg(s);
-      sinceAPIUpdate = MAX_API_INTERVAL;
+      
       return false;
     }
   }
   else
   {
     Serial.print(F("Remote host unreachable: "));
-    Serial.println(HOST);
+    Serial.println(host);
     printStatusMsg(F("Remote host unreachable."));
     sinceAPIUpdate = MAX_API_INTERVAL;
     return false;
   }
   return true;
 }
+
 
 
 

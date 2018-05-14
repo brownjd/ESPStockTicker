@@ -27,7 +27,8 @@ int readWifiInfo(char wifis[][2][96])
     temp[0] = '\0';
   }
   f.close();
-
+  int ret = wifiNo;
+  
   while(wifiNo < MAX_WIFI_NETWORKS)
   {
     wifis[wifiNo][0][0] = '\0';
@@ -36,7 +37,7 @@ int readWifiInfo(char wifis[][2][96])
   }
   
   Serial.println(F("readWifiInfo()...done"));
-  return wifiNo;
+  return ret;
 }
 
 void writeWifiFile(char wifis[][2][96])
@@ -120,5 +121,32 @@ void writeTickerFile()
   
   f.close();
   Serial.println(F("Writing ticker file...done"));
+}
+
+bool compareFWVersion()
+{
+  Serial.println(F("compareFWVersion..."));
+  bool ret = false;
+  File remote = SPIFFS.open(FW_REMOTE_VERSION_FILE, "r");
+  File local = SPIFFS.open(FW_LOCAL_VERSION_FILE, "r");
+  if(remote.size())
+  {
+    String rStr = remote.readString();
+    int remoteFWVersion = rStr.toInt();
+
+    if(local.size())
+    {
+      String lStr = local.readString();
+      int localFWVersion = lStr.toInt();
+    
+      char buf[50];
+      sprintf(buf, "Local version: %d, remote version: %d", localFWVersion, remoteFWVersion);
+      Serial.println(buf);
+
+      ret = (remoteFWVersion > localFWVersion); 
+    }
+  }
+  Serial.println(F("compareFWVersion...done"));
+  return ret;
 }
 
