@@ -70,7 +70,7 @@ const int CLIENT_TIMEOUT = 2000; //http read in ms
 const char* FIRMWARE_HOST = "raw.githubusercontent.com";
 const char* FW_VERSION_URL = "GET /brownjd/ESPStockTicker/master/data/version.txt";
 const char* FW_GET_SUFFIX = " HTTP/1.0\r\nHost: raw.githubusercontent.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
-const char* FW_BIN_URL = "https://raw.githubusercontent.com/brownjd/ESPStockTicker/master/data/ESPQuoteMachine.ino.nodemcu.bin";
+const char* FW_BIN_URL = "https://raw.githubusercontent.com/brownjd/ESPStockTicker/master/ESPQuoteMachine.ino.nodemcu.bin";
 
 const int CHART_X_ORIGIN = 31;
 const float CHART_X_SPACING = 18.25;
@@ -169,6 +169,8 @@ void loop()
         if(!ESPhttpUpdate.update(FW_BIN_URL))
         {
           Serial.println(F("Failed to update firmware."));
+          Serial.println(ESPhttpUpdate.getLastError());
+          Serial.println(ESPhttpUpdate.getLastErrorString());
         }
       }
       sinceFWUpdate = 0;
