@@ -128,23 +128,21 @@ bool compareFWVersion()
   Serial.println(F("compareFWVersion..."));
   bool ret = false;
   File remote = SPIFFS.open(FW_REMOTE_VERSION_FILE, "r");
-  File local = SPIFFS.open(FW_LOCAL_VERSION_FILE, "r");
   if(remote.size())
   {
     String rStr = remote.readString();
     int remoteFWVersion = rStr.toInt();
 
-    if(local.size())
-    {
-      String lStr = local.readString();
-      int localFWVersion = lStr.toInt();
-    
-      char buf[50];
-      sprintf(buf, "Local version: %d, remote version: %d", localFWVersion, remoteFWVersion);
-      Serial.println(buf);
+    char buf[50];
+    sprintf(buf, "Local version: %d, remote version: %d", VERSION, remoteFWVersion);
+    Serial.println(buf);
 
-      ret = (remoteFWVersion > localFWVersion); 
-    }
+    ret = (remoteFWVersion > VERSION); 
+    
+  }
+  else
+  {
+    Serial.println("ERROR: remote file size 0");
   }
   Serial.println(F("compareFWVersion...done"));
   return ret;

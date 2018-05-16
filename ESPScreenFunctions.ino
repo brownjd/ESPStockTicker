@@ -7,7 +7,7 @@ void initScreen()
   tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   tft.fillScreen(ST7735_BLACK);
   //1 for Hitlego or 3 for Wrisky
-  tft.setRotation(1);
+  tft.setRotation(3);
   tft.setTextWrap(false);
 }
 
@@ -88,6 +88,15 @@ void printTickers()
     //we've got past the end. Reset to beginning
     rowToPrint = 0;
     page = 0;
+  }
+
+  if(page == 0)
+  {
+    //only update on page 0
+    updatePrices();
+    yield();
+    updateChartInfo();
+    yield();
   }
 
   int lastRowToPrint = (page + 1) * DISPLAY_ROWS;
@@ -226,18 +235,17 @@ void printChart()
   
   //draw the vertical lines
   //9:30 left line
-  tft.drawFastVLine(CHART_X_ORIGIN, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
+  tft.drawFastVLine(CHART_X_ORIGIN, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_GREEN);
   //10 - 4 pm
+  int hour = 10;
+  Serial.println(CHART_X_WIDTH);
   for(int x = CHART_X_ORIGIN + (CHART_X_SPACING/2); x <= CHART_X_WIDTH + CHART_X_ORIGIN; x += CHART_X_SPACING)
   {
-    //Serial.print("vertical: ");
-    //Serial.println(x);
     tft.drawFastVLine(x, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_GREEN);
-    int hour = 10 + (((x - CHART_X_ORIGIN)/10)/(CHART_X_SPACING/10));
-    if(hour > 12) hour -= 12;
-    int posX = (hour >= 10) ? x-5 : x-2;
+    int posX = (hour >= 10) ? x-4 : x-3;
     tft.setCursor(posX, textPosY);
-    tft.print(hour);
+    tft.print((hour > 12) ? hour - 12 : hour);
+    hour++;
   }
 
   char priceShort [] = "%.0f";

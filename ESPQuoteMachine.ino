@@ -15,6 +15,7 @@
 #define ARDUINOJSON_USE_DOUBLE 0
 
 #define ST7735_GREY   0x9EFF
+#define VERSION 1
 
 const int MAX_WIFI_NETWORKS = 5;
 const char *WIFI_FILE = "/wifi.txt";
@@ -53,7 +54,7 @@ const char* TICKER_FILE = "/tickers.txt";
 const char* CHART_FILE = "/chart.json";
 const char* PRICING_FILE = "/prices.json";
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
-const char* FW_LOCAL_VERSION_FILE = "/version.txt";
+//const char* FW_LOCAL_VERSION_FILE = "/version.txt";
 
 const char* IEX_HOST = "api.iextrading.com";
 const char* PRICING_CHART_URL = "GET /1.0/stock/market/batch?filter=symbol,latestPrice,changePercent&types=quote&displayPercent=true&symbols=";
@@ -70,10 +71,10 @@ const int CLIENT_TIMEOUT = 2000; //http read in ms
 const char* FIRMWARE_HOST = "raw.githubusercontent.com";
 const char* FW_VERSION_URL = "GET /brownjd/ESPStockTicker/master/data/version.txt";
 const char* FW_GET_SUFFIX = " HTTP/1.0\r\nHost: raw.githubusercontent.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
-const char* FW_BIN_URL = "https://raw.githubusercontent.com/brownjd/ESPStockTicker/master/ESPQuoteMachine.ino.nodemcu.bin";
+const char* FW_BIN_URL = "http://espstockticker.s3-website-us-east-1.amazonaws.com/ESPQuoteMachine.ino.nodemcu.bin";
 
-const int CHART_X_ORIGIN = 31;
-const float CHART_X_SPACING = 18.25;
+const int CHART_X_ORIGIN = 35;
+const float CHART_X_SPACING = 19;//18.25;
 //not 7.5, because of the leading 9:30 we draw separately
 const float CHART_X_WIDTH = CHART_X_SPACING * 6.5;
 const int CHART_Y_ORIGIN = 3;
@@ -84,7 +85,8 @@ const int CHART_Y_TICKER_POS = 118;
 //how much working memory to leave after allocating JSON buffer
 const int WORKING_HEAP = 15000;
 const int MAX_API_INTERVAL = 60000;
-const int MAX_FW_INTERVAL = 5000;
+const int MAX_FW_INTERVAL = 600000;
+const int MAX_PRINT_INTERVAL = 7500;
 
 //TFT pins
 #define TFT_CS  D8
@@ -166,6 +168,7 @@ void loop()
       checkAvailableFirmwareVersion();
       if(compareFWVersion())
       {
+        printStatusMsg("Updating firmware...");
         if(!ESPhttpUpdate.update(FW_BIN_URL))
         {
           Serial.println(F("Failed to update firmware."));
@@ -175,6 +178,7 @@ void loop()
       }
       sinceFWUpdate = 0;
     }
+    
     if(sinceAPIUpdate >= MAX_API_INTERVAL)
     {
       yield();
@@ -185,24 +189,20 @@ void loop()
       queryChartInfo();
       sinceAPIUpdate = 0;
     }
-    if(sincePrint >= 7500)
+    if(sincePrint >= MAX_PRINT_INTERVAL)
     {
-      yield();
-      updatePrices();
-      yield();
-      updateChartInfo();
       printTickers();
       httpServer.handleClient();
       //printChart();
       sincePrint = 0;
     }
   }
-  if(sinceHeapPrint >= 2000)
-  {
-    sinceHeapPrint = 0;
-    Serial.print(F("Loop: free heap: "));
-    Serial.println(ESP.getFreeHeap());
-  }
+//  if(sinceHeapPrint >= 2000)
+//  {
+//    sinceHeapPrint = 0;
+//    Serial.print(F("Loop: free heap: "));
+//    Serial.println(ESP.getFreeHeap());
+//  }
   
   yield();
   httpServer.handleClient();
