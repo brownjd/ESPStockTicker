@@ -225,11 +225,13 @@ void printChart()
   high += spread;
   low -= spread;
 
+  /*
   Serial.print("low: ");
   Serial.print(low);
   Serial.print(" high: ");
   Serial.println(high);
-
+  */
+  
   //hour label Y position
   int textPosY = CHART_Y_ORIGIN + CHART_Y_HEIGHT + 5;
   
@@ -238,7 +240,7 @@ void printChart()
   tft.drawFastVLine(CHART_X_ORIGIN, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_GREEN);
   //10 - 4 pm
   int hour = 10;
-  Serial.println(CHART_X_WIDTH);
+  
   for(int x = CHART_X_ORIGIN + (CHART_X_SPACING/2); x <= CHART_X_WIDTH + CHART_X_ORIGIN; x += CHART_X_SPACING)
   {
     tft.drawFastVLine(x, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_GREEN);
