@@ -55,6 +55,7 @@ const char* CHART_FILE = "/chart.json";
 const char* PRICING_FILE = "/prices.json";
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 //const char* FW_LOCAL_VERSION_FILE = "/version.txt";
+const char* ROTATION_FILE = "/rotation.txt";
 
 const char* IEX_HOST = "api.iextrading.com";
 const char* PRICING_CHART_URL = "GET /1.0/stock/market/batch?filter=symbol,latestPrice,changePercent&types=quote&displayPercent=true&symbols=";

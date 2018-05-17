@@ -6,8 +6,8 @@ void initScreen()
   // Use this initializer if you're using a 1.8" TFT
   tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   tft.fillScreen(ST7735_BLACK);
-  //1 for Hitlego or 3 for Wrisky
-  tft.setRotation(3);
+ 
+  tft.setRotation(getScreenRotation());
   tft.setTextWrap(false);
 }
 

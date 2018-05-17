@@ -57,6 +57,8 @@ void getTickers()
   
   root[F("ip")] = WiFi.localIP().toString();
   root[F("hostname")] = String(hostName);
+  root[F("macaddress")] = WiFi.macAddress();
+  root[F("version")] = VERSION;
   
   JsonArray &ticArr = root.createNestedArray("tickers");
   for(int i = 0; i < TICKER_COUNT; i++)
