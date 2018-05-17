@@ -131,10 +131,10 @@ bool compareFWVersion()
   if(remote.size())
   {
     String rStr = remote.readString();
-    int remoteFWVersion = rStr.toInt();
+    float remoteFWVersion = rStr.toFloat();
 
     char buf[50];
-    sprintf(buf, "Local version: %d, remote version: %d", VERSION, remoteFWVersion);
+    sprintf(buf, "Local version: %f, remote version: %f", VERSION, remoteFWVersion);
     Serial.println(buf);
 
     ret = (remoteFWVersion > VERSION); 

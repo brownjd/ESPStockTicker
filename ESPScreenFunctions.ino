@@ -60,7 +60,7 @@ void printWifiInfo(bool clrScreen)
   {
     char msg [strlen(hostName) + 20];
 
-    sprintf(msg, "http://%s.local/", hostName);
+    sprintf(msg, "V%.1f  http://%s.local  ", VERSION, hostName);
     printStatusMsg(msg, clrScreen);
   }
   else
@@ -201,9 +201,9 @@ void printChart()
   tft.setTextColor(ST7735_WHITE);
   tft.setTextSize(1);
 
-  char status [50];
-  sprintf(status, "%s   http://%s.local", tickers[0], hostName); 
-  printStatusMsg(status);
+  //char status [50];
+  //sprintf(status, "%s   V%d  http://%s.local", tickers[0], VERSION, hostName); 
+  //printStatusMsg(status);
   
   //figure out min and max prices
   float low = -1;
@@ -271,6 +271,21 @@ void printChart()
     tft.print(label);
   }
 
+  //print the ticker
+  int16_t x = CHART_X_ORIGIN + CHART_X_WIDTH - (CHART_X_SPACING*2);
+  int16_t y = CHART_Y_ORIGIN + (CHART_Y_SPACING/1.5);
+  int16_t xbounds;
+  int16_t ybounds;
+  uint16_t width;
+  uint16_t height;
+  
+  tft.setFont(&Monospaced_plain_11); 
+  tft.setTextColor(ST7735_WHITE);
+  tft.getTextBounds(tickers[0], x, y, &xbounds, &ybounds, &width, &height);
+  tft.fillRect(xbounds-1, ybounds-1, width+2, height+2, ST7735_BLACK);
+  tft.setCursor(x, y);
+  tft.print(tickers[0]);
+
   for(int i = 0; i < MAX_CHART_POINTS - 1; i++)
   {
     //we need two points to draw a line
@@ -305,6 +320,7 @@ void printChart()
       }
     }
   }
+  printWifiInfo(false); 
 }
 
 double mmap(double x, double in_min, double in_max, double out_min, double out_max)

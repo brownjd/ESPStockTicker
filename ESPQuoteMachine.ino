@@ -15,7 +15,7 @@
 #define ARDUINOJSON_USE_DOUBLE 0
 
 #define ST7735_GREY   0x9EFF
-#define VERSION 1
+#define VERSION 2.1
 
 const int MAX_WIFI_NETWORKS = 5;
 const char *WIFI_FILE = "/wifi.txt";
@@ -188,22 +188,20 @@ void loop()
       yield();
       httpServer.handleClient();
       queryChartInfo();
+      yield();
+      httpServer.handleClient();
       sinceAPIUpdate = 0;
     }
     if(sincePrint >= MAX_PRINT_INTERVAL)
     {
-      printTickers();
+      yield();
       httpServer.handleClient();
-      //printChart();
+      printTickers();
+      yield();
+      httpServer.handleClient();
       sincePrint = 0;
     }
   }
-//  if(sinceHeapPrint >= 2000)
-//  {
-//    sinceHeapPrint = 0;
-//    Serial.print(F("Loop: free heap: "));
-//    Serial.println(ESP.getFreeHeap());
-//  }
   
   yield();
   httpServer.handleClient();
