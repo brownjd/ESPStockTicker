@@ -154,10 +154,10 @@ void queryPrices()
   Serial.println(F("queryPrices()..."));
  
   //PRICING_CHART_URL = "/1.0/stock/market/batch?filter=symbol,latestPrice,changePercent&types=quote&displayPercent=true&symbols=";
-  quoteRequestBuffer[0] = '\0';
+  requestBuffer[0] = '\0';
   
   //insert prefix
-  strcpy(quoteRequestBuffer, PRICING_CHART_URL);
+  strcpy(requestBuffer, PRICING_CHART_URL);
 
   bool tickersFound = false;
   //iterate over tickers looking for non-empty entries
@@ -166,8 +166,8 @@ void queryPrices()
     if (strlen(tickers[i]) > 0)
     {
       tickersFound = true;
-      strcat(quoteRequestBuffer, tickers[i]);
-      strcat(quoteRequestBuffer, ",");
+      strcat(requestBuffer, tickers[i]);
+      strcat(requestBuffer, ",");
     }
   }
     
@@ -175,12 +175,12 @@ void queryPrices()
   if (tickersFound)
   {
     Serial.print(F("Pricing API GET URL: "));
-    Serial.println(quoteRequestBuffer);
+    Serial.println(requestBuffer);
    
     //tack on the rest of the HTTP GET request
-    strcat(quoteRequestBuffer, IEX_GET_SUFFIX);
+    strcat(requestBuffer, IEX_GET_SUFFIX);
 
-    if(!bufferToFile(IEX_HOST, quoteRequestBuffer, PRICING_FILE))
+    if(!bufferToFile(IEX_HOST, requestBuffer, PRICING_FILE))
     {
       sinceAPIUpdate = MAX_API_INTERVAL;
     }
@@ -200,17 +200,17 @@ void queryChartInfo()
   Serial.println(F("queryChartInfo()..."));
   
   //String url = F("GET /1.0/stock/%s/chart/1d?chartInterval=%d&filter=minute,average");
-  quoteRequestBuffer[0] = '\0';
+  requestBuffer[0] = '\0';
 
-  sprintf(quoteRequestBuffer, BASE_CHART_URL, tickers[0], CHART_INTERVAL);
+  sprintf(requestBuffer, BASE_CHART_URL, tickers[0], CHART_INTERVAL);
 
   Serial.print(F("API Chart GET URL: "));
-  Serial.println(quoteRequestBuffer);
+  Serial.println(requestBuffer);
 
   //tack on the rest of the HTTP GET request
-  strcat(quoteRequestBuffer, IEX_GET_SUFFIX);
+  strcat(requestBuffer, IEX_GET_SUFFIX);
 
-  if(!bufferToFile(IEX_HOST, quoteRequestBuffer, CHART_FILE))
+  if(!bufferToFile(IEX_HOST, requestBuffer, CHART_FILE))
   {
     sinceAPIUpdate = MAX_API_INTERVAL;
   }
@@ -222,14 +222,14 @@ void checkAvailableFirmwareVersion()
 {
   Serial.println(F("checkAvailableFirmwareVersion()..."));
 
-  quoteRequestBuffer[0] = '\0';
-  strcat(quoteRequestBuffer, FW_VERSION_URL);
-  strcat(quoteRequestBuffer, FW_GET_SUFFIX);
+  requestBuffer[0] = '\0';
+  strcat(requestBuffer, FW_VERSION_URL);
+  strcat(requestBuffer, FW_GET_SUFFIX);
 
   Serial.print(F("Firmware version GET URL: "));
-  Serial.println(quoteRequestBuffer);
+  Serial.println(requestBuffer);
   
-  bufferToFile(FIRMWARE_HOST, quoteRequestBuffer, FW_REMOTE_VERSION_FILE);
+  bufferToFile(FIRMWARE_HOST, requestBuffer, FW_REMOTE_VERSION_FILE);
   
   Serial.println(F("checkAvailableFirmwareVersion()...done"));
 }
@@ -273,7 +273,6 @@ bool bufferToFile(const char *host, const char *buf, const char* filename)
       String s = F("Empty HTTP response.");
       Serial.println(s);
       printStatusMsg(s);
-      
       return false;
     }
   }
@@ -282,7 +281,6 @@ bool bufferToFile(const char *host, const char *buf, const char* filename)
     Serial.print(F("Remote host unreachable: "));
     Serial.println(host);
     printStatusMsg(F("Remote host unreachable."));
-    sinceAPIUpdate = MAX_API_INTERVAL;
     return false;
   }
   return true;

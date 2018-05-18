@@ -155,11 +155,9 @@ bool printTicker(int tickerNum)
       int triangleBase = -100;
       int triangleTop = -100;
       int triangleColor = ST7735_GREY;
-      //tft.setTextColor(ST7735_GREY);
       
       if(change > 0.0)
       {
-        //tft.setTextColor(ST7735_GREEN);
         triangleBase = fontYPos - 2;
         triangleTop = fontYPos - 6;
         triangleColor = ST7735_GREEN;
@@ -167,7 +165,6 @@ bool printTicker(int tickerNum)
       }
       else if(change < 0.0) 
       {
-        //tft.setTextColor(ST7735_RED);
         triangleBase = fontYPos - 6;
         triangleTop = fontYPos - 2;
         triangleColor = ST7735_RED;

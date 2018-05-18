@@ -37,9 +37,6 @@ void setupIPHandlers()
     Serial.println(F("onStationModeGotIP()..."));
     printWifiInfo(true);
     WiFi.softAPdisconnect(true);
-    
-    //pretty sure there is an MDNS callback
-    //updateHostName();
     MDNS.notifyAPChange();
     Serial.println(F("onStationModeGotIP()...done"));
   });
@@ -63,8 +60,6 @@ void startSoftAP()
   if(WiFi.status() != WL_CONNECTED)
   {
     WiFi.mode(WIFI_AP);
-    //Serial.print(F("Number of softAP connections: "));
-    //Serial.println(WiFi.softAPgetStationNum());
       
     Serial.print(F("Starting softAP: "));
     Serial.println(SOFT_AP_NAME);
