@@ -1,14 +1,23 @@
 void setupWebServer()
 {
   httpServer.serveStatic("/", SPIFFS, "/index.html");
+  //httpServer.on("/", getIndex);
   httpServer.serveStatic("/wifi", SPIFFS, "/wifi.html");
-  //httpServer.serveStatic("/log", SPIFFS, "/log.txt");
   httpServer.on("/gettickers", getTickers);
   httpServer.on("/settickers", setTickers);
   httpServer.on("/setwifi", setWifi);
   httpServer.on("/getwifi", getWifi);
   httpServer.begin();
 }
+
+//This is going to be cool
+/*
+void getIndex()
+{
+  httpServer.sendHeader("Content-Encoding", "gzip", true);
+  httpServer.send_P(200, "text/html", index_html_gz, index_html_gz_len);
+}
+*/
 
 void setTickers()
 {

@@ -1,12 +1,29 @@
-Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
+ST7735_REV tft = ST7735_REV(TFT_CS, TFT_DC, TFT_RST);
 int yPos = 0;
 
 void initScreen()
 {
+  //i should check for a tell-tale register value, but checking for the mac id of the
+  //esp it is soldered to will have to suffice.
+  const char *macaddress = WiFi.macAddress().c_str();
+  bool found = false;
+  for(int i = 0; i < YELLOW_TAB_SIZE; i++)
+  {
+    if(strcmp(macaddress, YELLOW_TABS[i]))
+    {
+      //means we have a goofed up yellow tab screen that
+      //requires special orientation handling
+      found = true;
+    }
+  }
+
   // Use this initializer if you're using a 1.8" TFT
-  tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
-  tft.fillScreen(ST7735_BLACK);
- 
+  // For some reason, a batch of them I received were printing
+  // mirrored backwards text, so I had to special case them 
+  // by deriving from Adafruit's ST7735 class. Hence the new
+  // YELLOWTAB type and ST7735_REV class 
+  (found) ? tft.initR(INITR_YELLOWTAB) : tft.fillScreen(ST7735_BLACK);
+  
   tft.setRotation(getScreenRotation());
   tft.setTextWrap(false);
 }

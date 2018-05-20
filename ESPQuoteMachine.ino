@@ -6,10 +6,11 @@
 #include <ESP8266httpUpdate.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
-#include <Adafruit_ST7735.h>
-#include <Adafruit_GFX.h>
 #include <ArduinoOTA.h>
+#include <Adafruit_GFX.h>
+#include "ST7735_REV.h"
 #include "Monospaced_plain_11.h"
+#include "index.html.gz.h"
 #include "FS.h"
 #include <elapsedMillis.h>
 #define ARDUINOJSON_USE_DOUBLE 0
@@ -17,6 +18,10 @@
 //default triangle color - doubt we need it
 #define ST7735_GREY   0x9EFF
 #define VERSION 2.1
+//list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards. 
+//i call them YELLOWTABS because of they had yellow tabs on the screen protectors
+const int YELLOW_TAB_SIZE = 1;
+const char YELLOW_TABS[YELLOW_TAB_SIZE][18] = { "60:01:94:74:4A:42" };
 
 const int MAX_WIFI_NETWORKS = 5;
 const char *WIFI_FILE = "/wifi.txt";
@@ -232,6 +237,15 @@ void loop()
 void updatePrices()
 {
   Serial.println(F("updatePrices()..."));
+
+  //clear memory first
+  for(int tickerNum = 0; tickerNum < TICKER_COUNT; tickerNum++)
+  {
+    prices[tickerNum][0] = 0.0;
+    prices[tickerNum][1] = 0.0;
+  }
+
+  
   File f = SPIFFS.open(PRICING_FILE, "r");
   Serial.print(F("Price file size: "));
   Serial.println(f.size());
@@ -249,8 +263,6 @@ void updatePrices()
       {
         yield();
         char *ticker = tickers[tickerNum];
-        prices[tickerNum][0] = 0.0;
-        prices[tickerNum][1] = 0.0;
         
         if(ticker[0])
         {
@@ -292,6 +304,12 @@ void updateChartInfo()
 {
   Serial.println(F("updateChartInfo()..."));
 
+  //clear out memory
+  for(int i = 0; i < MAX_CHART_POINTS; i++)
+  {
+    chartinfo[i] = 0;
+  }
+  
   File f = SPIFFS.open(CHART_FILE, "r");
   Serial.print(F("Chart file size: "));
   Serial.println(f.size());
