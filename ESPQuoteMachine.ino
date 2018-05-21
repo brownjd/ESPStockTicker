@@ -66,7 +66,7 @@ const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 const char* ROTATION_FILE = "/rotation.txt";
 
 const char* IEX_HOST = "api.iextrading.com";
-const char* PRICING_CHART_URL = "GET /1.0/stock/market/batch?filter=symbol,latestPrice,changePercent&types=quote&displayPercent=true&symbols=";
+const char* PRICING_CHART_URL = "GET /1.0/stock/market/batch?filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=";
 //interval is number of minutes between prices
 const char* BASE_CHART_URL = "GET /1.0/stock/%s/chart/1d?chartInterval=%d&filter=average";
 const char* IEX_GET_SUFFIX = " HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
@@ -153,28 +153,12 @@ void setup()
 {
   Serial.begin(115200);
   delay(2000);
-  Serial.print(F("Begin setup: free heap: "));
-  Serial.println(ESP.getFreeHeap());
   SPIFFS.begin();
 
   //remove temp data 
   SPIFFS.remove(CHART_FILE);
   SPIFFS.remove(PRICING_FILE);
 
-  /*
-  FSInfo fs_info;
-  SPIFFS.info(fs_info);
-  
-  Serial.print(F("Total bytes:"));
-  Serial.println(fs_info.totalBytes);
-  Serial.print(F("Used bytes:"));
-  Serial.println(fs_info.usedBytes);
-  Serial.print(F("maxOpenFiles:"));
-  Serial.println(fs_info.maxOpenFiles);
-  Serial.print(F("maxPathLength:"));
-  Serial.println(fs_info.maxPathLength);
-  */
-  
   initScreen();
   setupIPHandlers();
   connectWifi();  
@@ -254,11 +238,8 @@ void updatePrices()
   Serial.println(f.size());
   if(f.size() > 0)
   {  
-    DynamicJsonBuffer jsonBuffer(getJSONBufferSize());
+    DynamicJsonBuffer jsonBuffer(3000);
     JsonObject &jsonQuotes = jsonBuffer.parseObject(f);
-    
-    Serial.print(F("Free heap after pricing: "));
-    Serial.println(ESP.getFreeHeap());
     
     if(jsonQuotes.success())
     {
@@ -272,7 +253,6 @@ void updatePrices()
           JsonObject &quoteItem = jsonQuotes[ticker][F("quote")];
           if(quoteItem.success())
           {
-            const char* symbol = quoteItem[F("symbol")];
             float price = quoteItem[F("latestPrice")];
             float change = quoteItem[F("changePercent")];
         
@@ -316,49 +296,42 @@ void updateChartInfo()
   File f = SPIFFS.open(CHART_FILE, "r");
   Serial.print(F("Chart file size: "));
   Serial.println(f.size());
+  bool parseError = false;
   if(f.size() > 0)
   {
-    DynamicJsonBuffer jsonBuffer(getJSONBufferSize());
-    JsonArray &jsonChart = jsonBuffer.parseArray(f);
-    
-    Serial.print(F("Free heap after chart: "));
-    Serial.println(ESP.getFreeHeap());
-    yield();
-    
-    if(jsonChart.success())
-    {    
-      int size = jsonChart.size();
-      
-      for(int i = 0; i < MAX_CHART_POINTS && i < size; i++)
-      {
-        yield();
-        const char *ticker = tickers[i];
-        JsonVariant timeSlot = jsonChart[i];
-        chartinfo[i] = timeSlot[F("average")];
-      }
-    }
-    else
+    f.find('[');
+    // Parsing one data point at a time because the list can get 
+    // long and we don't have the headroom to load all the JSON
+    // in memory at once
+    for(int i = 0; i < MAX_CHART_POINTS && f.available(); i++)
     {
-      String s  = F("Chart data error.");
-      Serial.println(s);
-      printStatusMsg(s);
-      f.seek(0, SeekSet);
-      Serial.println(f.readString());
-      sinceAPIUpdate = MAX_API_INTERVAL;
+      yield();
+      DynamicJsonBuffer jsonBuffer(100);
+      JsonObject &jsonDataPoint = jsonBuffer.parseObject(f);
+    
+      if(jsonDataPoint.success())
+      {          
+          chartinfo[i] = jsonDataPoint[F("average")];
+      }
+      else
+      {
+        parseError = true;
+        String s  = F("Chart data error.");
+        Serial.println(s);
+        printStatusMsg(s);
+      }
+      f.find(',');
     }
+  }
+
+  if(parseError)
+  {
+    f.seek(0, SeekSet);
+    Serial.println(f.readString());
+    sinceAPIUpdate = MAX_API_INTERVAL;
   }
   
   f.close();
       
   Serial.println(F("updateChartInfo()...done"));
 }
-
-int getJSONBufferSize()
-{
-  Serial.print(F("Free heap before JSON allocation: "));
-  Serial.println(ESP.getFreeHeap());
-  return ESP.getFreeHeap() - WORKING_HEAP;
-}
-
-
-

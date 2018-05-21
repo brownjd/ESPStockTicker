@@ -147,31 +147,3 @@ bool compareFWVersion()
   Serial.println(F("compareFWVersion...done"));
   return ret;
 }
-
-//int getScreenRotation()
-//{
-//  String macaddress = WiFi.macAddress();
-//  
-//   //1 for Hitlego or 3 for Wrisky
-//  int rotation = 1;
-//  File f = SPIFFS.open(ROTATION_FILE, "r");
-//  while(f.available())
-//  {
-//    char temp[96] = "";
-//    const char s[2] = " ";
-//    
-//    int size = f.readBytesUntil('\n', temp, 96);
-//    if(size > 1)
-//    {
-//      char *mac = strtok(temp, s);
-//      char *rotationStr = strtok(NULL, s);
-//      if(strcmp(mac, macaddress.c_str()) == 0)
-//      {
-//        rotation = strtol(rotationStr, NULL, 10);
-//      }
-//    }
-//  }
-//  f.close();
-//  return rotation;
-//}
-
