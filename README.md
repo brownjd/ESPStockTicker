@@ -2,8 +2,8 @@
 
 This project contains the necessary code to retrieve and display stock market prices for a set of stock tickers. It will also display a one day chart for a given stock ticker. 
 
-![tickerlisting](tickerlisting.jpg)
-![tickerchart](tickerchart.jpg)
+![tickerlisting](images/tickerlisting.jpg)
+![tickerchart](images/tickerchart.jpg)
 
 It makes use of the following hardware:
 
@@ -29,11 +29,11 @@ After compiling the source code and uploading to your ESP, you'll need to also u
 
 After the ESP restarts it will begin by looking for known WIFI networks. If it can't connect, it will go into softAP mode and create an adhoc wifi network called esp. You can connect to it and navigate to [http://esp.local/wifi]. This page will allow you to configure your wifi settings.
 
-![WifiScreenshot](wifiscreenshot.png)
+![WifiScreenshot](images/wifiscreenshot.png)
 
 After you save your changes, the ESP should pick up the new settings and try to connect. Once it is connected, it will display its mDNS hostname after looking for any name collisions. You can access this URL with a browser on an mDNS aware platform (Linux, Mac OS, IOS). Generally this will be [http://esp.local]. This page will allow you to specify your stock tickers to track. The first ticker will be used to print the chart for the day. 
 
-![EnterStocksScreenShot](enterstocks.png)
+![EnterStocksScreenShot](images/enterstocks.png)
 
 # Eagle Files
 
