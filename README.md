@@ -25,9 +25,7 @@ The code can be compiled in the Arduino IDE provided you have installed the boar
 
 # Setup
 
-After compiling the source code and uploading to your ESP, you'll need to also upload the data files. You can install the very handy ESP8266 Data Upload plugin to your Arduino IDE. [https://github.com/esp8266/arduino-esp8266fs-plugin]
-
-After the ESP restarts it will begin by looking for known WIFI networks. If it can't connect, it will go into softAP mode and create an adhoc wifi network called esp. You can connect to it and navigate to [http://esp.local/wifi]. This page will allow you to configure your wifi settings.
+After compiling the source code and uploading to your ESP, it will restart and begin by looking for known WIFI networks. If it can't connect, it will go into softAP mode and create an adhoc wifi network called esp. You can connect to it and navigate to [http://esp.local/wifi]. This page will allow you to configure your wifi settings.
 
 ![WifiScreenshot](images/wifiscreenshot.png)
 
@@ -45,3 +43,6 @@ If you want to print the PCB, I recommend https://oshpark.com.
 
 The design for the case is hosted here: [https://cad.onshape.com/documents/baf6f8920e0056c74aa33163/w/9b8db8e1d71b7267bfcf4cd1/e/1de548e62555208ea106f9fa]
 
+# Building
+
+If you're interested in making changes, you'll notice two static html pages wifi.html and index.html have been gzipped. In fact, these are included as header files and served from PROGMEM. The beauty of this approach is that you don't need a separate filesystem image for SPIFFS. Firmware can be retrieved and loaded as a single transaction. So if you make changes to the html files, you need to run the gulp script to regenerate the hex gzipped files. Simply run 'npm i'. It will pick up the json package file and set up your environment. Then just run gulp.
