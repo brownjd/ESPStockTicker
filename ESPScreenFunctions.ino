@@ -5,15 +5,17 @@ void initScreen()
 {
   //i should check for a tell-tale register value, but checking for the mac id of the
   //esp it is soldered to will have to suffice.
-  const char *macaddress = WiFi.macAddress().c_str();
-  bool found = false;
+  Serial.println(WiFi.macAddress());
+  
+  bool yellow = false;
   for(int i = 0; i < YELLOW_TAB_SIZE; i++)
   {
-    if(strcmp(macaddress, YELLOW_TABS[i]))
+    if(strcmp(WiFi.macAddress().c_str(), YELLOW_TABS[i]) == 0)
     {
       //means we have a goofed up yellow tab screen that
       //requires special orientation handling
-      found = true;
+      yellow = true;
+      Serial.println("YELLOW_TAB: true");
     }
   }
 
@@ -22,9 +24,22 @@ void initScreen()
   // mirrored backwards text, so I had to special case them 
   // by deriving from Adafruit's ST7735 class. Hence the new
   // YELLOWTAB type and ST7735_REV class 
-  (found) ? tft.initR(INITR_YELLOWTAB) : tft.fillScreen(ST7735_BLACK);
+  (yellow) ? tft.initR(INITR_YELLOWTAB) : tft.initR(INITR_BLACKTAB);
+
+  bool flipped = false;
+  for(int i = 0; i < ROTATION_SIZE; i++)
+  {
+    if(strcmp(WiFi.macAddress().c_str(), ROTATION_OVERRIDES[i]) == 0)
+    {
+      //means we have a wrisky type screen instead of hitlego
+      //instead of orientation 1, we do 3.
+      flipped = true;
+      Serial.println("FLIPPED: true");
+    }
+  }
   
-  tft.setRotation(getScreenRotation());
+  (flipped) ? tft.setRotation(3) : tft.setRotation(1);
+  tft.fillScreen(ST7735_BLACK);
   tft.setTextWrap(false);
 }
 

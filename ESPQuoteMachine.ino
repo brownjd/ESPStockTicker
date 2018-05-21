@@ -23,6 +23,9 @@
 const int YELLOW_TAB_SIZE = 1;
 const char YELLOW_TABS[YELLOW_TAB_SIZE][18] = { "60:01:94:74:4A:42" };
 
+const int ROTATION_SIZE = 1;
+const char ROTATION_OVERRIDES[ROTATION_SIZE][18] = { "DC:4F:22:1C:2A:98" };
+
 const int MAX_WIFI_NETWORKS = 5;
 const char *WIFI_FILE = "/wifi.txt";
 
