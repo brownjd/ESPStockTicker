@@ -17,7 +17,7 @@
 
 //default triangle color - doubt we need it
 #define ST7735_GREY   0x9EFF
-#define VERSION 2.1
+#define VERSION 2.12
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards. 
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
 const int YELLOW_TAB_SIZE = 1;

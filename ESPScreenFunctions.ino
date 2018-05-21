@@ -92,7 +92,7 @@ void printWifiInfo(bool clrScreen)
   {
     char msg [strlen(hostName) + 20];
 
-    sprintf(msg, "V%.1f  http://%s.local  ", VERSION, hostName);
+    sprintf(msg, "V%.2f  http://%s.local  ", VERSION, hostName);
     printStatusMsg(msg, clrScreen);
   }
   else
