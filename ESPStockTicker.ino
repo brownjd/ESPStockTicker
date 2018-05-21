@@ -20,7 +20,7 @@
 
 //default triangle color - doubt we need it
 #define ST7735_GREY   0x9EFF
-#define VERSION 2.12
+#define VERSION 2.13
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
 const int YELLOW_TAB_SIZE = 1;
@@ -85,7 +85,7 @@ const char* FIRMWARE_HOST = "raw.githubusercontent.com";
 const char* FW_VERSION_URL = "GET /brownjd/ESPStockTicker/master/data/version.txt";
 const char* FW_GET_SUFFIX = " HTTP/1.0\r\nHost: raw.githubusercontent.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 //OTA update does not support HTTPS, so had to use amazon for firmware hosting
-const char* FW_BIN_URL = "http://espstockticker.s3-website-us-east-1.amazonaws.com/ESPQuoteMachine.ino.nodemcu.bin";
+const char* FW_BIN_URL = "http://espstockticker.s3-website-us-east-1.amazonaws.com/ESPStockTicker.ino.nodemcu.bin";
 
 //left side of chart in pixels
 const int CHART_X_ORIGIN = 35;
