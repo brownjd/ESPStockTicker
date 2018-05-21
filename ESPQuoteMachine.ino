@@ -10,7 +10,10 @@
 #include <Adafruit_GFX.h>
 #include "ST7735_REV.h"
 #include "Monospaced_plain_11.h"
+//serve static html from PROGMEM
+//so we don't need a separate data filese
 #include "index.html.gz.h"
+#include "wifi.html.gz.h"
 #include "FS.h"
 #include <elapsedMillis.h>
 #define ARDUINOJSON_USE_DOUBLE 0
@@ -18,7 +21,7 @@
 //default triangle color - doubt we need it
 #define ST7735_GREY   0x9EFF
 #define VERSION 2.12
-//list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards. 
+//list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
 const int YELLOW_TAB_SIZE = 1;
 const char YELLOW_TABS[YELLOW_TAB_SIZE][18] = { "60:01:94:74:4A:42" };
@@ -101,7 +104,7 @@ const int CHART_Y_TICKER_POS = 118;
 
 //how much working memory to leave after allocating JSON buffer
 //JSON processing buffer is dynamically allocated on stack and freed after processing
-//because there is not enough room to reliably make an HTTPS connection and process JSON in 
+//because there is not enough room to reliably make an HTTPS connection and process JSON in
 //a single call.
 const int WORKING_HEAP = 15000;
 //how often to get new data in ms
@@ -131,8 +134,8 @@ float prices[TICKER_COUNT][2];
 
 //how many minutes between data points to request
 const int CHART_INTERVAL = 2;
-//9:30 - 4 pm = 390 minutes / increment 
-const int MAX_CHART_POINTS = 390/CHART_INTERVAL;
+//9:30 - 4 pm = 390 minutes / increment
+const int MAX_CHART_POINTS = 390 / CHART_INTERVAL;
 //list of prices
 float chartinfo[MAX_CHART_POINTS];
 
@@ -155,13 +158,13 @@ void setup()
   delay(2000);
   SPIFFS.begin();
 
-  //remove temp data 
+  //remove temp data
   SPIFFS.remove(CHART_FILE);
   SPIFFS.remove(PRICING_FILE);
 
   initScreen();
   setupIPHandlers();
-  connectWifi();  
+  connectWifi();
   setupWebServer();
   setupOTA();
   readTickerFile();
@@ -175,16 +178,16 @@ void loop()
   ArduinoOTA.handle();
   yield();
   httpServer.handleClient();
-  
-  if(WiFi.status() == WL_CONNECTED)
+
+  if (WiFi.status() == WL_CONNECTED)
   {
-    if(sinceFWUpdate >= MAX_FW_INTERVAL)
+    if (sinceFWUpdate >= MAX_FW_INTERVAL)
     {
       checkAvailableFirmwareVersion();
-      if(compareFWVersion())
+      if (compareFWVersion())
       {
         printStatusMsg("Updating firmware...");
-        if(!ESPhttpUpdate.update(FW_BIN_URL))
+        if (!ESPhttpUpdate.update(FW_BIN_URL))
         {
           Serial.println(F("Failed to update firmware."));
           Serial.println(ESPhttpUpdate.getLastError());
@@ -193,8 +196,8 @@ void loop()
       }
       sinceFWUpdate = 0;
     }
-    
-    if(sinceAPIUpdate >= MAX_API_INTERVAL)
+
+    if (sinceAPIUpdate >= MAX_API_INTERVAL)
     {
       yield();
       httpServer.handleClient();
