@@ -20,7 +20,7 @@
 
 //default triangle color - doubt we need it
 #define ST7735_GREY   0x9EFF
-#define VERSION 2.13
+#define VERSION 2.14
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
 const int YELLOW_TAB_SIZE = 1;
@@ -65,6 +65,7 @@ const float MSG_LINE_SPACING = 1.75;
 const char* TICKER_FILE = "/tickers.txt";
 const char* CHART_FILE = "/chart.json";
 const char* PRICING_FILE = "/prices.json";
+const char* MOVING_AVG_FILE = "moving.txt";
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 const char* ROTATION_FILE = "/rotation.txt";
 
@@ -72,6 +73,7 @@ const char* IEX_HOST = "api.iextrading.com";
 const char* PRICING_CHART_URL = "GET /1.0/stock/market/batch?filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=";
 //interval is number of minutes between prices
 const char* BASE_CHART_URL = "GET /1.0/stock/%s/chart/1d?chartInterval=%d&filter=average";
+const char* BASE_200DAY_URL = "GET /1.0/stock/%s/stats/day200MovingAvg";
 const char* IEX_GET_SUFFIX = " HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
 //used to process stock selection form submission
@@ -138,6 +140,8 @@ const int CHART_INTERVAL = 2;
 const int MAX_CHART_POINTS = 390 / CHART_INTERVAL;
 //list of prices
 float chartinfo[MAX_CHART_POINTS];
+//200 day moving average
+float movingAvg = 0.0f;
 
 //re-used and cleared to make API calls for prices and chart info
 char requestBuffer [GET_REQUEST_BUFFER_SIZE] = {""};
@@ -161,6 +165,7 @@ void setup()
   //remove temp data
   SPIFFS.remove(CHART_FILE);
   SPIFFS.remove(PRICING_FILE);
+  SPIFFS.remove(MOVING_AVG_FILE);
 
   initScreen();
   setupIPHandlers();
@@ -183,6 +188,8 @@ void loop()
   {
     if (sinceFWUpdate >= MAX_FW_INTERVAL)
     {
+      yield();
+      httpServer.handleClient();
       checkAvailableFirmwareVersion();
       if (compareFWVersion())
       {
@@ -332,6 +339,19 @@ void updateChartInfo()
     f.seek(0, SeekSet);
     Serial.println(f.readString());
     sinceAPIUpdate = MAX_API_INTERVAL;
+  }
+  
+  f.close();
+
+  f = SPIFFS.open(MOVING_AVG_FILE, "r");
+  if(f.size() > 0)
+  {
+    movingAvg = f.readString().toFloat();
+  }
+  else
+  {
+    movingAvg = 0.0f;
+    Serial.println(F("No moving average info in temp file."));
   }
   
   f.close();

@@ -91,8 +91,8 @@ void readTickerFile()
       //strip off the newline
       temp[size] = '\0';
       strncpy(tickers[tickerNo], temp, MAX_TICKER_SIZE);
-      Serial.print("Ticker: ");
-      Serial.println(tickers[tickerNo]);
+      //Serial.print("Ticker: ");
+      //Serial.println(tickers[tickerNo]);
       tickerNo++;
     }
     

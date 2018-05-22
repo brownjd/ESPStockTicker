@@ -107,7 +107,7 @@ void printTickers()
   printWifiInfo();
   Serial.print(F("Page: "));
   Serial.println(page);
-  
+
   page = (page < 0 ) ? 0 : page;
   
   yield();
@@ -229,14 +229,10 @@ void printChart()
   tft.fillScreen(ST7735_BLACK);
   tft.setTextColor(ST7735_WHITE);
   tft.setTextSize(1);
-
-  //char status [50];
-  //sprintf(status, "%s   V%d  http://%s.local", tickers[0], VERSION, hostName); 
-  //printStatusMsg(status);
   
   //figure out min and max prices
-  float low = -1;
-  float high = -1;
+  float low = movingAvg;
+  float high = movingAvg;
   for(int i = 0; i < MAX_CHART_POINTS; i++)
   {
     float price = chartinfo[i];
@@ -266,13 +262,13 @@ void printChart()
   
   //draw the vertical lines
   //9:30 left line
-  tft.drawFastVLine(CHART_X_ORIGIN, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_GREEN);
+  tft.drawFastVLine(CHART_X_ORIGIN, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
   //10 - 4 pm
   int hour = 10;
   
   for(int x = CHART_X_ORIGIN + (CHART_X_SPACING/2); x <= CHART_X_WIDTH + CHART_X_ORIGIN; x += CHART_X_SPACING)
   {
-    tft.drawFastVLine(x, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_GREEN);
+    tft.drawFastVLine(x, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
     int posX = (hour >= 10) ? x-4 : x-3;
     tft.setCursor(posX, textPosY);
     tft.print((hour > 12) ? hour - 12 : hour);
@@ -286,9 +282,9 @@ void printChart()
   //draw the horizontal lines and price labels
   for(int y = CHART_Y_ORIGIN; y <= CHART_Y_HEIGHT + CHART_Y_ORIGIN; y += CHART_Y_SPACING)
   {
-    //Serial.print("horizonal: ");
+    //Serial.print("horizontal: ");
     //Serial.println(y);
-    tft.drawFastHLine(CHART_X_ORIGIN, y, CHART_X_WIDTH, ST7735_GREEN);
+    tft.drawFastHLine(CHART_X_ORIGIN, y, CHART_X_WIDTH, ST7735_WHITE);
     float val = mmap(CHART_Y_HEIGHT - y, CHART_Y_ORIGIN, CHART_Y_HEIGHT, low, high);
     //Serial.print("label: ");
     //Serial.println(val);
@@ -299,6 +295,10 @@ void printChart()
       sprintf(label, priceShort, val);
     tft.print(label);
   }
+
+  //print the moving avg
+  float scaledAvg = CHART_Y_HEIGHT - mmap(movingAvg, low, high, CHART_Y_ORIGIN, CHART_Y_HEIGHT); 
+  tft.drawFastHLine(CHART_X_ORIGIN, scaledAvg, CHART_X_WIDTH, ST7735_BLUE);
 
   //print the ticker
   int16_t x = CHART_X_ORIGIN + CHART_X_WIDTH - (CHART_X_SPACING*2);
@@ -315,14 +315,16 @@ void printChart()
   tft.setCursor(x, y);
   tft.print(tickers[0]);
 
-  for(int i = 0; i < MAX_CHART_POINTS - 1; i++)
+  float price0 = chartinfo[0];
+  int x0 = mmap(0, 0, MAX_CHART_POINTS, CHART_X_ORIGIN, CHART_X_ORIGIN+CHART_X_WIDTH);
+  float scaled0 = CHART_Y_HEIGHT - mmap(price0, low, high, CHART_Y_ORIGIN, CHART_Y_HEIGHT);
+  
+  for(int i = 1; i < MAX_CHART_POINTS - 1; i++)
   {
+    yield();
     //we need two points to draw a line
-    float price0 = chartinfo[i];
     if(price0 > 0)
     {
-      float scaled0 = CHART_Y_HEIGHT - mmap(price0, low, high, CHART_Y_ORIGIN, CHART_Y_HEIGHT);
-      
       float price1 = chartinfo[i+1];
       float scaled1 = CHART_Y_HEIGHT - mmap(price1, low, high, CHART_Y_ORIGIN, CHART_Y_HEIGHT);
 
@@ -336,16 +338,27 @@ void printChart()
       Serial.print(" price1: ");
       Serial.print(price1);
       Serial.print(" scaled1: ");
-      Serial.println(scaled1);
+      Serial.print(scaled1);
+      Serial.print(" movingAvg: ");
+      Serial.print(movingAvg);
+      Serial.print(" scaledAvg: ");
+      Serial.println(scaledAvg);
       */
       
-      //tft.drawPixel(CHART_X_ORIGIN+(i*3.34), scaled0, ST7735_GREEN);
-      //tft.drawLine(CHART_X_ORIGIN+(i*3.34), scaled0, CHART_X_ORIGIN+((i+1)*3.34), scaled1, ST7735_GREEN);
       if(price1 > 0)
       {
-        int x0 = mmap(i, 0, MAX_CHART_POINTS, CHART_X_ORIGIN, CHART_X_ORIGIN+CHART_X_WIDTH);
         int x1 = mmap(i+1, 0, MAX_CHART_POINTS, CHART_X_ORIGIN, CHART_X_ORIGIN+CHART_X_WIDTH);
-        tft.drawLine(x0, scaled0, x1, scaled1, ST7735_WHITE);
+        if(price0 > movingAvg && price1 > movingAvg)
+        {
+          tft.drawLine(x0, scaled0, x1, scaled1, ST7735_GREEN);
+        }
+        else
+        {
+          tft.drawLine(x0, scaled0, x1, scaled1, ST7735_RED);
+        }
+        price0 = price1;
+        scaled0 = scaled1;
+        x0 = x1;
       }
     }
   }

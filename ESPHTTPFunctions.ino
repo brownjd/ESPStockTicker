@@ -228,6 +228,21 @@ void queryChartInfo()
   {
     sinceAPIUpdate = MAX_API_INTERVAL;
   }
+
+  requestBuffer[0] = '\0';
+
+  sprintf(requestBuffer, BASE_200DAY_URL, tickers[0]);
+
+  Serial.print(F("API 200 Day Moving Average GET URL: "));
+  Serial.println(requestBuffer);
+
+  //tack on the rest of the HTTP GET request
+  strcat(requestBuffer, IEX_GET_SUFFIX);
+
+  if(!bufferToFile(IEX_HOST, requestBuffer, MOVING_AVG_FILE))
+  {
+    sinceAPIUpdate = MAX_API_INTERVAL;
+  }
   
   Serial.println(F("queryChartInfo()...done")); 
 }
