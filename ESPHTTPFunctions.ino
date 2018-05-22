@@ -37,6 +37,7 @@ void setTickers()
   {
     String value = httpServer.arg(i);
     value.toUpperCase();
+    value.trim();
 
     //we're expecting an array of values with the same arg name
     if(httpServer.argName(i) == tickerName)
