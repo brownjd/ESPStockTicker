@@ -137,7 +137,7 @@ bool compareFWVersion()
     sprintf(buf, "Local version: %f, remote version: %f", VERSION, remoteFWVersion);
     Serial.println(buf);
 
-    ret = (remoteFWVersion > VERSION); 
+    ret = (fabs(remoteFWVersion - VERSION) > 0.01f); 
     
   }
   else
