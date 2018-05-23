@@ -231,8 +231,8 @@ void printChart()
   tft.setTextSize(1);
   
   //figure out min and max prices
-  float low = movingAvg;
-  float high = movingAvg;
+  float low = yearlow;
+  float high = yearhigh;
   for(int i = 0; i < MAX_CHART_POINTS; i++)
   {
     float price = chartinfo[i];
@@ -298,7 +298,15 @@ void printChart()
 
   //print the moving avg
   float scaledAvg = CHART_Y_HEIGHT - mmap(movingAvg, low, high, CHART_Y_ORIGIN, CHART_Y_HEIGHT); 
-  tft.drawFastHLine(CHART_X_ORIGIN, scaledAvg, CHART_X_WIDTH, ST7735_BLUE);
+  tft.drawFastHLine(CHART_X_ORIGIN, scaledAvg, CHART_X_WIDTH, ST7735_YELLOW);
+
+  //52 week low
+  float scaledLow = CHART_Y_HEIGHT - mmap(yearlow, low, high, CHART_Y_ORIGIN, CHART_Y_HEIGHT); 
+  tft.drawFastHLine(CHART_X_ORIGIN, scaledLow, CHART_X_WIDTH, ST7735_MAGENTA);
+
+  //52 week high
+  float scaledHigh = CHART_Y_HEIGHT - mmap(yearhigh, low, high, CHART_Y_ORIGIN, CHART_Y_HEIGHT); 
+  tft.drawFastHLine(CHART_X_ORIGIN, scaledHigh, CHART_X_WIDTH, ST7735_CYAN);
 
   //print the ticker
   int16_t x = CHART_X_ORIGIN + CHART_X_WIDTH - (CHART_X_SPACING*2);
@@ -307,7 +315,7 @@ void printChart()
   int16_t ybounds;
   uint16_t width;
   uint16_t height;
-  
+
   tft.setFont(&Monospaced_plain_11); 
   tft.setTextColor(ST7735_WHITE);
   tft.getTextBounds(tickers[0], x, y, &xbounds, &ybounds, &width, &height);
@@ -315,6 +323,7 @@ void printChart()
   tft.setCursor(x, y);
   tft.print(tickers[0]);
 
+  //grab first chart data point
   float price0 = chartinfo[0];
   int x0 = mmap(0, 0, MAX_CHART_POINTS, CHART_X_ORIGIN, CHART_X_ORIGIN+CHART_X_WIDTH);
   float scaled0 = CHART_Y_HEIGHT - mmap(price0, low, high, CHART_Y_ORIGIN, CHART_Y_HEIGHT);

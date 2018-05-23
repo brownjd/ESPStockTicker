@@ -20,7 +20,7 @@
 
 //default triangle color - doubt we need it
 #define ST7735_GREY   0x9EFF
-#define VERSION 2.14
+#define VERSION 2.15
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
 const int YELLOW_TAB_SIZE = 1;
@@ -65,7 +65,7 @@ const float MSG_LINE_SPACING = 1.75;
 const char* TICKER_FILE = "/tickers.txt";
 const char* CHART_FILE = "/chart.json";
 const char* PRICING_FILE = "/prices.json";
-const char* MOVING_AVG_FILE = "moving.txt";
+const char* KEY_STATS_FILE = "keystats.json";
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 const char* ROTATION_FILE = "/rotation.txt";
 
@@ -73,7 +73,7 @@ const char* IEX_HOST = "api.iextrading.com";
 const char* PRICING_CHART_URL = "GET /1.0/stock/market/batch?filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=";
 //interval is number of minutes between prices
 const char* BASE_CHART_URL = "GET /1.0/stock/%s/chart/1d?chartInterval=%d&filter=average";
-const char* BASE_200DAY_URL = "GET /1.0/stock/%s/stats/day200MovingAvg";
+const char* KEY_STATS_URL = "GET /1.0/stock/%s/stats?filter=week52low,week52high,day200MovingAvg";
 const char* IEX_GET_SUFFIX = " HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
 //used to process stock selection form submission
@@ -142,6 +142,8 @@ const int MAX_CHART_POINTS = 390 / CHART_INTERVAL;
 float chartinfo[MAX_CHART_POINTS];
 //200 day moving average
 float movingAvg = 0.0f;
+float yearlow = 0.0f;
+float yearhigh = 0.0f;
 
 //re-used and cleared to make API calls for prices and chart info
 char requestBuffer [GET_REQUEST_BUFFER_SIZE] = {""};
@@ -165,7 +167,7 @@ void setup()
   //remove temp data
   SPIFFS.remove(CHART_FILE);
   SPIFFS.remove(PRICING_FILE);
-  SPIFFS.remove(MOVING_AVG_FILE);
+  SPIFFS.remove(KEY_STATS_FILE);
 
   initScreen();
   setupIPHandlers();
@@ -333,6 +335,12 @@ void updateChartInfo()
       f.find(',');
     }
   }
+  else
+  {
+    String s  = F("Chart data empty.");
+    Serial.println(s);
+    printStatusMsg(s);
+  }
 
   if(parseError)
   {
@@ -343,15 +351,32 @@ void updateChartInfo()
   
   f.close();
 
-  f = SPIFFS.open(MOVING_AVG_FILE, "r");
+  f = SPIFFS.open(KEY_STATS_FILE, "r");
   if(f.size() > 0)
   {
-    movingAvg = f.readString().toFloat();
+    DynamicJsonBuffer jsonBuffer(100);
+    JsonObject &jsonObj = jsonBuffer.parseObject(f);
+    if(jsonObj.success())
+    {
+      yearlow = jsonObj[F("week52low")];
+      yearhigh = jsonObj[F("week52high")];
+      movingAvg = jsonObj[F("day200MovingAvg")];
+    }
+    else
+    {
+      String s  = F("Key stats error.");
+      Serial.println(s);
+      printStatusMsg(s);
+      f.seek(0, SeekSet);
+      Serial.println(f.readString());
+      sinceAPIUpdate = MAX_API_INTERVAL;
+    }
   }
   else
   {
-    movingAvg = 0.0f;
-    Serial.println(F("No moving average info in temp file."));
+    String s  = F("Key stats empty.");
+    Serial.println(s);
+    printStatusMsg(s);
   }
   
   f.close();
