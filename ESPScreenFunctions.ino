@@ -246,7 +246,7 @@ void printChart()
     }
   }
 
-  float spread = (high - low) * .10;
+  float spread = (high - low) * .20;
   high += spread;
   low -= spread;
 
@@ -262,13 +262,13 @@ void printChart()
   
   //draw the vertical lines
   //9:30 left line
-  tft.drawFastVLine(CHART_X_ORIGIN, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
+  tft.drawFastVLine(CHART_X_ORIGIN, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_GREY);
   //10 - 4 pm
   int hour = 10;
   
   for(int x = CHART_X_ORIGIN + (CHART_X_SPACING/2); x <= CHART_X_WIDTH + CHART_X_ORIGIN; x += CHART_X_SPACING)
   {
-    tft.drawFastVLine(x, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
+    tft.drawFastVLine(x, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_GREY);
     int posX = (hour >= 10) ? x-4 : x-3;
     tft.setCursor(posX, textPosY);
     tft.print((hour > 12) ? hour - 12 : hour);
@@ -284,7 +284,7 @@ void printChart()
   {
     //Serial.print("horizontal: ");
     //Serial.println(y);
-    tft.drawFastHLine(CHART_X_ORIGIN, y, CHART_X_WIDTH, ST7735_WHITE);
+    tft.drawFastHLine(CHART_X_ORIGIN, y, CHART_X_WIDTH, ST7735_GREY);
     float val = mmap(CHART_Y_HEIGHT - y, CHART_Y_ORIGIN, CHART_Y_HEIGHT, low, high);
     //Serial.print("label: ");
     //Serial.println(val);
@@ -298,19 +298,19 @@ void printChart()
 
   //print the moving avg
   float scaledAvg = CHART_Y_HEIGHT - mmap(movingAvg, low, high, CHART_Y_ORIGIN, CHART_Y_HEIGHT); 
-  tft.drawFastHLine(CHART_X_ORIGIN, scaledAvg, CHART_X_WIDTH, ST7735_YELLOW);
+  tft.drawFastHLine(CHART_X_ORIGIN, scaledAvg, CHART_X_WIDTH, ST7735_DIMYELLOW);
 
   //52 week low
   float scaledLow = CHART_Y_HEIGHT - mmap(yearlow, low, high, CHART_Y_ORIGIN, CHART_Y_HEIGHT); 
-  tft.drawFastHLine(CHART_X_ORIGIN, scaledLow, CHART_X_WIDTH, ST7735_MAGENTA);
+  tft.drawFastHLine(CHART_X_ORIGIN, scaledLow, CHART_X_WIDTH, ST7735_WHITE);
 
   //52 week high
   float scaledHigh = CHART_Y_HEIGHT - mmap(yearhigh, low, high, CHART_Y_ORIGIN, CHART_Y_HEIGHT); 
-  tft.drawFastHLine(CHART_X_ORIGIN, scaledHigh, CHART_X_WIDTH, ST7735_CYAN);
+  tft.drawFastHLine(CHART_X_ORIGIN, scaledHigh, CHART_X_WIDTH, ST7735_WHITE);
 
   //print the ticker
-  int16_t x = CHART_X_ORIGIN + CHART_X_WIDTH - (CHART_X_SPACING*2);
-  int16_t y = CHART_Y_ORIGIN + (CHART_Y_SPACING/1.5);
+  int16_t x = CHART_X_ORIGIN + CHART_X_WIDTH - (CHART_X_SPACING*1.75);
+  int16_t y = CHART_Y_ORIGIN + (CHART_Y_SPACING/1.25);
   int16_t xbounds;
   int16_t ybounds;
   uint16_t width;
@@ -319,7 +319,7 @@ void printChart()
   tft.setFont(&Monospaced_plain_11); 
   tft.setTextColor(ST7735_WHITE);
   tft.getTextBounds(tickers[0], x, y, &xbounds, &ybounds, &width, &height);
-  tft.fillRect(xbounds-1, ybounds-1, width+2, height+2, ST7735_BLACK);
+  tft.fillRect(xbounds-2, ybounds-2, width+3, height+3, ST7735_BLACK);
   tft.setCursor(x, y);
   tft.print(tickers[0]);
 

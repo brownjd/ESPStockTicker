@@ -19,8 +19,10 @@
 #define ARDUINOJSON_USE_DOUBLE 0
 
 //default triangle color - doubt we need it
-#define ST7735_GREY   0x9EFF
-#define VERSION 2.15
+#define ST7735_GREY   0xB5F6
+#define ST7735_DIMYELLOW 0xFF36
+
+#define VERSION 2.16
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
 const int YELLOW_TAB_SIZE = 1;
@@ -114,7 +116,7 @@ const int MAX_API_INTERVAL = 60000;
 //how often to check for new firmware in ms
 const int MAX_FW_INTERVAL = 600000;
 //how often to switch display pages in ms
-const int MAX_PRINT_INTERVAL = 7500;
+const int MAX_PRINT_INTERVAL = 8500;
 
 //TFT pins
 #define TFT_CS  D8
