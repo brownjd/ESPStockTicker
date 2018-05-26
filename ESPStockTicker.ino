@@ -16,13 +16,14 @@
 #include "wifi.html.gz.h"
 #include "FS.h"
 #include <elapsedMillis.h>
+
 #define ARDUINOJSON_USE_DOUBLE 0
 
 //default triangle color - doubt we need it
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.16
+#define VERSION 2.17
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
 const int YELLOW_TAB_SIZE = 1;
@@ -177,8 +178,6 @@ void setup()
   setupWebServer();
   setupOTA();
   readTickerFile();
-  Serial.print(F("End setup: free heap: "));
-  Serial.println(ESP.getFreeHeap());
 }
 
 void loop()
@@ -224,6 +223,7 @@ void loop()
     {
       yield();
       httpServer.handleClient();
+      //page = 2;
       printTickers();
       yield();
       httpServer.handleClient();

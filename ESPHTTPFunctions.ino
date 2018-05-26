@@ -26,8 +26,6 @@ void wifi()
 void setTickers()
 {
   Serial.println(F("setTickers()..."));
-  Serial.print(F("setTickers: free heap: "));
-  Serial.println(ESP.getFreeHeap());
   Serial.print(F("args: "));
   Serial.println(httpServer.args());
   
@@ -57,8 +55,7 @@ void setTickers()
   httpServer.send(200, F("text/html"), F("<html><head><script>window.location.replace(\"/\");</script></head><body/></html>"));
   //force a refresh
   sinceAPIUpdate = MAX_API_INTERVAL;
-  Serial.print(F("setTickers: free heap: "));
-  Serial.println(ESP.getFreeHeap());
+ 
   Serial.println(F("setTickers()...done"));
 }
 
@@ -166,7 +163,8 @@ void getWifi()
 void queryPrices()
 {
   Serial.println(F("queryPrices()..."));
- 
+  printStatusMsg("Updating prices.");
+  
   //PRICING_CHART_URL = "/1.0/stock/market/batch?filter=symbol,latestPrice,changePercent&types=quote&displayPercent=true&symbols=";
   requestBuffer[0] = '\0';
   
@@ -212,7 +210,7 @@ void queryPrices()
 void queryChartInfo()
 {
   Serial.println(F("queryChartInfo()..."));
-  
+  printStatusMsg("Updating chart data.");
   //String url = F("GET /1.0/stock/%s/chart/1d?chartInterval=%d&filter=minute,average");
   requestBuffer[0] = '\0';
 
@@ -250,7 +248,7 @@ void queryChartInfo()
 void checkAvailableFirmwareVersion()
 {
   Serial.println(F("checkAvailableFirmwareVersion()..."));
-
+  printStatusMsg(F("Checking for updates."));
   requestBuffer[0] = '\0';
   strcat(requestBuffer, FW_VERSION_URL);
   strcat(requestBuffer, FW_GET_SUFFIX);
