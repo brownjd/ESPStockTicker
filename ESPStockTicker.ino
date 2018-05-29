@@ -199,6 +199,10 @@ void loop()
         printStatusMsg("Updating firmware...");
         if (!ESPhttpUpdate.update(FW_BIN_URL))
         {
+          if(ESPhttpUpdate.getLastError() == 11)
+          {
+            printMsg("\n\n\n\n\n Please reboot to update.", true);
+          }
           Serial.println(F("Failed to update firmware."));
           Serial.println(ESPhttpUpdate.getLastError());
           Serial.println(ESPhttpUpdate.getLastErrorString());
