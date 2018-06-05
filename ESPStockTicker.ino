@@ -23,7 +23,7 @@
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.18
+#define VERSION 2.19
 
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
@@ -120,6 +120,8 @@ const int MAX_API_INTERVAL = 60000;
 const int MAX_FW_INTERVAL = 600000;
 //how often to switch display pages in ms
 const int MAX_PRINT_INTERVAL = 8500;
+//how long to remain in AP mode before rebooting
+const int MAX_AP_INTERVAL = 120000;
 
 //TFT pins
 #define TFT_CS  D8
@@ -166,6 +168,11 @@ elapsedMillis sincePrint;
 elapsedMillis sinceAPIUpdate = MAX_API_INTERVAL;
 //keep track of when to check for updates
 elapsedMillis sinceFWUpdate = MAX_FW_INTERVAL;
+//keep track of time in AP mode
+//this is to fix a problem where a power outage
+//might have the ESP not find WiFi network while
+//WiFi router is still booting up
+elapsedMillis sinceAPStart = MAX_AP_INTERVAL;
 
 int page = 0;
 
@@ -243,6 +250,13 @@ void loop()
       httpServer.handleClient();
       sincePrint = 0;
     }
+  }
+
+  //we don't want to wait around for ever in adhoc mode
+  if(WiFi.getMode() == WIFI_AP && sinceAPStart >= MAX_AP_INTERVAL )
+  {
+    Serial.println("Rebooting due to time limit for SoftAP.");
+    ESP.restart();
   }
   
   yield();

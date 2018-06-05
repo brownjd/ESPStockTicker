@@ -74,10 +74,12 @@ void startSoftAP()
     sprintf(msg, "Connect to '%s'", SOFT_AP_NAME);
     printMsg(msg);
     printMsg(F("WIFI network. Then open"));
-    sprintf(msg, "http://%s.local/wifi", hostName);
+    sprintf(msg, "http://%s/wifi", WiFi.softAPIP().toString().c_str());
     printMsg(msg);
     printMsg(F("to configure settings."));
   }
+  
+  sinceAPStart = 0;
   Serial.println(F("startSoftAP()...done"));
 }
 
