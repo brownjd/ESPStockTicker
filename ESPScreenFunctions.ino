@@ -109,52 +109,54 @@ void printTickers()
   Serial.println(page);
 
   page = (page < 0 ) ? 0 : page;
-  
-  yield();
-  
-  int rowToPrint = page * DISPLAY_ROWS;
-  
-  if(rowToPrint > TICKER_COUNT)
-  {
-    Serial.println("rowToPrint > TICKER_COUNT - this shouldn't happen.");
-    //we've got past the end. Reset to beginning
-    rowToPrint = 0;
-    page = 0;
-  }
-
-  if(page == 0)
-  {
-    httpServer.handleClient();
-    //only update on page 0
-    updatePrices();
-    yield();
-  }
-  
-  if(page == 2)
-  {
-    httpServer.handleClient();
-    updateChartInfo();
-    yield();
-  }
 
   httpServer.handleClient();
   
-  int lastRowToPrint = (page + 1) * DISPLAY_ROWS;
-
-  //handle the case where we might print a partial page if total rows isn't easily divisible by pages
-  lastRowToPrint = (lastRowToPrint > TICKER_COUNT) ? TICKER_COUNT : lastRowToPrint;
-
-  //now make sure we're not printing past the last calculated display row
-  if(rowToPrint >= lastRowToPrint)
+  if(page == 0)
   {
-    //means we reached the end, display the chart and reset
-    printChart();
-    rowToPrint = 0;
-    page = 0;
-    lastRowToPrint =  DISPLAY_ROWS;
+    //only update on page 0
+    updatePrices();
   }
-  else
+  
+  else if(page == 2)
   {
+    updateChartInfo();
+    yield();
+    httpServer.handleClient();
+    printChart();
+    page++;
+  }
+
+  //last page
+  else if(page == 3)
+  {
+    updateTBillInfo();
+    yield();
+    httpServer.handleClient();
+    printTBill();
+    page++;
+  }
+
+  httpServer.handleClient();  
+  yield();
+
+  if(page < 2)
+  {
+    int rowToPrint = page * DISPLAY_ROWS;
+    
+    if(rowToPrint > TICKER_COUNT)
+    {
+      Serial.println("rowToPrint > TICKER_COUNT - this shouldn't happen.");
+      //we've got past the end. Reset to beginning
+      rowToPrint = 0;
+      page = 0;
+    }
+
+    int lastRowToPrint = (page + 1) * DISPLAY_ROWS;
+
+    //handle the case where we might print a partial page if total rows isn't easily divisible by pages
+    lastRowToPrint = (lastRowToPrint > TICKER_COUNT) ? TICKER_COUNT : lastRowToPrint;
+
     while(rowToPrint < TICKER_COUNT && rowToPrint < lastRowToPrint) 
     {
       printTicker(rowToPrint);
@@ -162,9 +164,12 @@ void printTickers()
     }
     page++;
   }
-  //hold on chart
-  //page = 2;
-  //Serial.println(F("printTickers()...done"));
+
+  //last page, loop
+  if(page == 4)
+  {
+    page = 0;
+  }
 }
 
 bool printTicker(int tickerNum)
@@ -395,6 +400,157 @@ void printChart()
   }
   printWifiInfo(false); 
 }
+
+void printTBill()
+{
+  tft.fillScreen(ST7735_BLACK);
+  tft.setTextColor(ST7735_WHITE);
+  tft.setTextSize(1);
+  
+  //draw the vertical lines
+  //origin
+  tft.drawFastVLine(CHART_X_ORIGIN, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
+
+  //midpoint
+  tft.drawFastVLine(CHART_X_ORIGIN + (CHART_X_WIDTH/2), CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
+  
+  //right side
+  tft.drawFastVLine(CHART_X_ORIGIN + CHART_X_WIDTH, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
+  
+  const char priceShort [] = "%.1f";
+  const char priceLong [] = "%.2f";
+
+  //figure out min and max prices
+  float low = tbillyields[0];
+  float high = tbillyields[0];
+  int totalDataPoints = 0;
+  while(totalDataPoints < MAX_TBILLS && tbilldates[totalDataPoints][0] != '\0')
+  {
+    float yield = tbillyields[totalDataPoints];
+    if(yield > 0)
+    {  
+      if(yield < low) low = yield;
+      if(yield > high) high = yield;
+    }
+    totalDataPoints++;
+  }
+  
+  totalDataPoints--;
+  /*
+  Serial.print("Total data points: ");
+  Serial.println(totalDataPoints);
+  */
+  float spread = (high - low) * .10;
+  high += spread;
+  low -= spread;
+  /*
+  Serial.print("low: ");
+  Serial.print(low);
+  Serial.print(" high: ");
+  Serial.println(high);
+  */
+  char label [10];
+  //draw the horizontal lines and price labels
+  const int yMin = CHART_Y_ORIGIN;
+  const int yMax = CHART_Y_ORIGIN + CHART_Y_HEIGHT;
+  const int xMin = CHART_X_ORIGIN;
+  const int xMax = CHART_X_ORIGIN + CHART_X_WIDTH;
+  
+  for(int y = yMin; y <= yMax; y += CHART_Y_SPACING)
+  {
+    //draw the line
+    tft.drawFastHLine(xMin, y, CHART_X_WIDTH, ST7735_WHITE);
+
+    //draw the price label - y incrememnts going down so need
+    //to subtract from max y value first
+    float price = mmap(yMax - y, 0, CHART_Y_HEIGHT, low, high);
+    /*
+    Serial.print("inverse y: ");
+    Serial.print(yMax - y);
+    Serial.print(" price label: ");
+    Serial.println(price);
+    */
+    //slight offset because of font goofiness
+    tft.setCursor(0, y-3);
+    
+    //thousands don't have decimals
+    if(price < 1000)
+      sprintf(label, priceLong, price);
+    else
+      sprintf(label, priceShort, price);
+    
+    tft.print(label);
+  }
+
+  //print the title
+  int16_t x = xMax - (CHART_X_SPACING*3.00);
+  int16_t y = yMin + (CHART_Y_SPACING/1.25);
+  int16_t xbounds;
+  int16_t ybounds;
+  uint16_t width;
+  uint16_t height;
+
+  tft.setFont(&Monospaced_plain_11); 
+  tft.setTextColor(ST7735_WHITE);
+  tft.getTextBounds(tickers[0], x, y, &xbounds, &ybounds, &width, &height);
+  tft.fillRect(xbounds-2, ybounds-2, width+3, height+3, ST7735_BLACK);
+  tft.setCursor(x, y);
+  tft.print("10 Year");
+
+  //date Y position
+  int textPosY = CHART_Y_ORIGIN + CHART_Y_HEIGHT + 5;
+  tft.setFont();
+  tft.setTextSize(1);
+  //print month labels
+  tft.setCursor(CHART_X_ORIGIN-5, textPosY);
+  tft.print(tbilldates[0]);
+
+  int midPt = mmap(totalDataPoints/2, 0, totalDataPoints, xMin, xMax);
+  tft.setCursor(midPt-5, textPosY);
+  tft.print(tbilldates[totalDataPoints/2]);
+
+  tft.setCursor(CHART_X_ORIGIN + CHART_X_WIDTH - 20, textPosY);
+  tft.print(tbilldates[totalDataPoints]);
+
+  //grab first chart data point
+  float price0 = tbillyields[0];
+  int x0 = mmap(0, 0, totalDataPoints, xMin, xMax);
+  float scaled0 = yMax - mmap(price0, low, high, 0, CHART_Y_HEIGHT);
+  
+  for(int i = 1; i < totalDataPoints; i++)
+  {
+    yield();
+    //we need two points to draw a line
+    if(price0 > 0)
+    {
+      float price1 = tbillyields[i+1];
+      float scaled1 = yMax - mmap(price1, low, high, 0, CHART_Y_HEIGHT);
+      
+      if(price1 > 0)
+      {
+        /*
+        Serial.print(i);
+        Serial.print(" ");
+        Serial.print(" price0: ");
+        Serial.print(price0);
+        Serial.print(" scaled0: ");
+        Serial.print(scaled0);
+        Serial.print(" price1: ");
+        Serial.print(price1);
+        Serial.print(" scaled1: ");
+        Serial.println(scaled1);
+        */
+        int x1 = mmap(i+1, 0, totalDataPoints, xMin, xMax);
+        tft.drawLine(x0, scaled0, x1, scaled1, ST7735_GREEN);
+        price0 = price1;
+        scaled0 = scaled1;
+        x0 = x1;
+      }
+    }
+  }
+  printWifiInfo(false); 
+}
+
 
 double mmap(double x, double x_min, double x_max, double y_min, double y_max)
 {

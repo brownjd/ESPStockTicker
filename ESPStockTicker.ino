@@ -23,7 +23,8 @@
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.17
+#define VERSION 2.18
+
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
 const int YELLOW_TAB_SIZE = 1;
@@ -69,15 +70,21 @@ const char* TICKER_FILE = "/tickers.txt";
 const char* CHART_FILE = "/chart.json";
 const char* PRICING_FILE = "/prices.json";
 const char* KEY_STATS_FILE = "keystats.json";
+const char* TBILL_FILE = "tbill.csv";
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 const char* ROTATION_FILE = "/rotation.txt";
 
 const char* IEX_HOST = "api.iextrading.com";
-const char* PRICING_CHART_URL = "GET /1.0/stock/market/batch?filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=";
+const char* PRICING_CHART_URL = "GET /1.0/stock/market/batch?filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=%s HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 //interval is number of minutes between prices
-const char* BASE_CHART_URL = "GET /1.0/stock/%s/chart/1d?chartInterval=%d&filter=average";
-const char* KEY_STATS_URL = "GET /1.0/stock/%s/stats?filter=week52low,week52high,day200MovingAvg";
-const char* IEX_GET_SUFFIX = " HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* BASE_CHART_URL = "GET /1.0/stock/%s/chart/1d?chartInterval=%d&filter=average HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* KEY_STATS_URL = "GET /1.0/stock/%s/stats?filter=week52low,week52high,day200MovingAvg HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+
+const char* TIME_HOST = "worldclockapi.com";
+const char* TIME_URL = "GET /api/json/cst/now HTTP/1.0\r\nHost: worldclockapi.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+
+const char* TBILL_HOST = "fred.stlouisfed.org";
+const char* TBILL_URL = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DGS10&fq=Daily HTTP/1.0\r\nHost: fred.stlouisfed.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
 //used to process stock selection form submission
 //also used to create API GET request
@@ -107,11 +114,6 @@ const int CHART_Y_SPACING = 20;
 //vertical position of chart labels - hour
 const int CHART_Y_TICKER_POS = 118;
 
-//how much working memory to leave after allocating JSON buffer
-//JSON processing buffer is dynamically allocated on stack and freed after processing
-//because there is not enough room to reliably make an HTTPS connection and process JSON in
-//a single call.
-const int WORKING_HEAP = 15000;
 //how often to get new data in ms
 const int MAX_API_INTERVAL = 60000;
 //how often to check for new firmware in ms
@@ -136,6 +138,12 @@ char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
 //hols list of prices and percentage change - position corresponds to tickers array
 //PRICE, CHANGE
 float prices[TICKER_COUNT][2];
+//holds list of treasury yields
+const int MAX_TBILLS = 62;
+const int MAX_TBILL_DATE_LEN = 11;
+char tbilldates[MAX_TBILLS][MAX_TBILL_DATE_LEN];
+float tbillyields[MAX_TBILLS];
+
 
 //how many minutes between data points to request
 const int CHART_INTERVAL = 2;
@@ -221,13 +229,15 @@ void loop()
       queryChartInfo();
       yield();
       httpServer.handleClient();
+      queryTreasury();
+      yield();
+      httpServer.handleClient();
       sinceAPIUpdate = 0;
     }
     if(sincePrint >= MAX_PRINT_INTERVAL)
     {
       yield();
       httpServer.handleClient();
-      //page = 2;
       printTickers();
       yield();
       httpServer.handleClient();
@@ -389,3 +399,77 @@ void updateChartInfo()
       
   Serial.println(F("updateChartInfo()...done"));
 }
+
+void updateTBillInfo()
+{
+  Serial.println(F("updateTBillInfo()..."));
+
+  //clear out memory
+  for(int i = 0; i < MAX_TBILLS; i++)
+  {
+    tbilldates[i][0] = '\0';
+    tbillyields[i] = 0.0f;
+  }
+  
+  File f = SPIFFS.open(TBILL_FILE, "r");
+  Serial.print(F("TBill file size: "));
+  Serial.println(f.size());
+  if(f.size() > 0)
+  {
+    char temp[20] = "";
+    const char tok[2] = ",";
+
+    //toss first line header info
+    f.readBytesUntil('\n', temp, 20);
+    
+    for(int i = 0; f.available(); i++)
+    {
+      int size = f.readBytesUntil('\n', temp, 20);
+      temp[size] = '\0';
+      //Serial.println(temp);
+      if(size > 1)
+      {
+        const char *date = strtok(temp, tok);
+        const char *yield = strtok(NULL, tok);
+
+        int year;
+        int month;
+        int day;
+        sscanf(date, "%d-%d-%d", &year, &month, &day);
+        /*
+        Serial.print("month: ");
+        Serial.println(month);
+        Serial.print("day: ");
+        Serial.println(day);
+        */
+        char dateStr [6];
+        snprintf(dateStr, 6, "%d/%d", month, day); 
+      
+        strncpy(tbilldates[i], dateStr, MAX_TBILL_DATE_LEN);
+        tbillyields[i] = atof(yield); 
+        /*
+        Serial.print("date: ");
+        Serial.print(tbilldates[i]);
+        Serial.print(" yield: ");
+        Serial.println(tbillyields[i]);
+        */
+      }
+      else
+      {
+        String s = F("TBill data error.");
+        Serial.println(s);
+        printStatusMsg(s);
+      }
+    }
+  }
+  else
+  {
+    String s  = F("TBill data empty.");
+    Serial.println(s);
+    printStatusMsg(s);
+  }
+
+  f.close();      
+  Serial.println(F("updateTBillInfo()...done"));
+}
+
