@@ -5,7 +5,7 @@ void initScreen()
 {
   //i should check for a tell-tale register value, but checking for the mac id of the
   //esp it is soldered to will have to suffice.
-  Serial.println(WiFi.macAddress());
+  //Serial.println(WiFi.macAddress());
   
   bool yellow = false;
   for(int i = 0; i < YELLOW_TAB_SIZE; i++)
@@ -15,7 +15,7 @@ void initScreen()
       //means we have a goofed up yellow tab screen that
       //requires special orientation handling
       yellow = true;
-      Serial.println("YELLOW_TAB: true");
+      //Serial.println("YELLOW_TAB: true");
     }
   }
 
@@ -34,7 +34,7 @@ void initScreen()
       //means we have a wrisky type screen instead of hitlego
       //instead of orientation 1, we do 3.
       flipped = true;
-      Serial.println("FLIPPED: true");
+      //Serial.println("FLIPPED: true");
     }
   }
   
@@ -157,12 +157,15 @@ void printTickers()
     //handle the case where we might print a partial page if total rows isn't easily divisible by pages
     lastRowToPrint = (lastRowToPrint > TICKER_COUNT) ? TICKER_COUNT : lastRowToPrint;
 
+    bool printed = false;
     while(rowToPrint < TICKER_COUNT && rowToPrint < lastRowToPrint) 
     {
-      printTicker(rowToPrint);
+      if(printTicker(rowToPrint)) printed = true;
       rowToPrint++;
     }
     page++;
+    //we printed an empty page, so flip to next;
+    if(!printed) sincePrint = MAX_PRINT_INTERVAL;
   }
 
   //last page, loop
@@ -241,30 +244,56 @@ bool printTicker(int tickerNum)
 
 void printChart()
 {
+  /* Testing
+   //clear out memory
+  for(int i = 0; i < MAX_CHART_POINTS; i++)
+  {
+    chartinfo[i] = 0.0f;
+  }
+
+  strcpy(tickers[0], "TEST");
+ 
+  chartinfo[0] = 1.0f;
+  chartinfo[1] = 1.25f;
+  chartinfo[2] = 1.5f;
+  chartinfo[3] = 1.4f;
+  chartinfo[4] = 1.2f;
+  chartinfo[5] = 4.0f;
+
+  yearlow = 0.50f;
+  yearhigh = 4.0f;
+  movingAvg = 1.25f;
+  */
+  
   tft.fillScreen(ST7735_BLACK);
   tft.setTextColor(ST7735_WHITE);
   tft.setTextSize(1);
+
+  //draw the horizontal lines and price labels
+  const int yMin = CHART_Y_ORIGIN;
+  const int yMax = CHART_Y_ORIGIN + CHART_Y_HEIGHT;
+  const int xMin = CHART_X_ORIGIN;
+  const int xMax = CHART_X_ORIGIN + CHART_X_WIDTH;
+  const int wid = CHART_X_WIDTH;
+  const int len = CHART_Y_HEIGHT;
   
   //hour label Y position
-  int textPosY = CHART_Y_ORIGIN + CHART_Y_HEIGHT + 5;
+  int textPosY = yMax + 5;
   
   //draw the vertical lines
   //9:30 left line
-  tft.drawFastVLine(CHART_X_ORIGIN, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
+  tft.drawFastVLine(xMin, yMin, len, ST7735_WHITE);
   
   //10 - 4 pm
   int hour = 10;
-  for(int x = CHART_X_ORIGIN + (CHART_X_SPACING/2); x <= CHART_X_WIDTH + CHART_X_ORIGIN; x += CHART_X_SPACING)
+  for(int x = xMin + (CHART_X_SPACING/2); x <= xMax; x += CHART_X_SPACING)
   {
-    tft.drawFastVLine(x, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
+    tft.drawFastVLine(x, yMin, len, ST7735_WHITE);
     int posX = (hour >= 10) ? x-4 : x-3;
     tft.setCursor(posX, textPosY);
     tft.print((hour > 12) ? hour - 12 : hour);
     hour++;
   }
-
-  char priceShort [] = "%.0f";
-  char priceLong [] = "%.1f";
 
   //figure out min and max prices
   float low = yearlow;
@@ -274,47 +303,44 @@ void printChart()
     float price = chartinfo[i];
     if(price > 0)
     { 
-      if(low == -1 ) low = price;
-      if(high == -1) high = price;
-      
-      if(price < low) low = price;
-      if(price > high) high = price;
+      if(low - price > 0.1f) low = price;
+      if(price - high > 0.1f) high = price;
     }
   }
-
+  /*
   float spread = (high - low) * .10;
   high += spread;
   low -= spread;
-/*
+  */
+  /*
   Serial.print("low: ");
   Serial.print(low);
   Serial.print(" high: ");
-  Serial.print(high);
-  Serial.print(" 200 day avg: ");
-  Serial.print(movingAvg);
-  Serial.print(" 52 week low: ");
+  Serial.println(high);
+  
+  Serial.print("52 week low: ");
   Serial.print(yearlow);
   Serial.print( "52 week high: ");
-  Serial.println(yearhigh);
+  Serial.print(yearhigh);
+  Serial.print(" 200 day avg: ");
+  Serial.println(movingAvg);
   */
   char label [10];
-  //draw the horizontal lines and price labels
-  const int yMin = CHART_Y_ORIGIN;
-  const int yMax = CHART_Y_ORIGIN + CHART_Y_HEIGHT;
-  const int xMin = CHART_X_ORIGIN;
-  const int xMax = CHART_X_ORIGIN + CHART_X_WIDTH;
+
+  char priceShort [] = "%.0f";
+  char priceLong [] = "%.1f";
   
   for(int y = yMin; y <= yMax; y += CHART_Y_SPACING)
   {
     //draw the line
-    tft.drawFastHLine(xMin, y, CHART_X_WIDTH, ST7735_WHITE);
+    tft.drawFastHLine(xMin, y, wid, ST7735_WHITE);
 
-    //draw the price label - y incrememnts going down so need
-    //to subtract from max y value first
-    float price = mmap(yMax - y, 0, CHART_Y_HEIGHT, low, high);
+    //draw the price label - y incrememnts going down 
+    //so need to reverse high and low
+    float price = mmap(y, yMin, yMax, high, low);
     /*
-    Serial.print("inverse y: ");
-    Serial.print(yMax - y);
+    Serial.print("y: ");
+    Serial.print(y);
     Serial.print(" price label: ");
     Serial.println(price);
     */
@@ -331,20 +357,68 @@ void printChart()
   }
 
   //calc the moving avg so we can print red or green later
-  float scaledAvg = yMax - mmap(movingAvg, low, high, 0, CHART_Y_HEIGHT); 
-  //tft.drawFastHLine(xMin, scaledAvg, CHART_X_WIDTH, ST7735_DIMYELLOW);
+  float scaledAvg = mmap(movingAvg, low, high, yMax, yMin); 
+  tft.drawFastHLine(xMin, scaledAvg, wid, ST7735_DIMYELLOW);
 
   //52 week low
-  float scaledLow = yMax - mmap(yearlow, low, high, 0, CHART_Y_HEIGHT); 
-  tft.drawFastHLine(xMin, scaledLow, CHART_X_WIDTH, ST7735_RED);
-
+  if(high - yearhigh > 0.1f)
+  {
+    float scaledLow = mmap(yearlow, low, high, yMax, yMin); 
+    tft.drawFastHLine(xMin, scaledLow, wid, ST7735_RED);
+  }
+  
   //52 week high
-  float scaledHigh = yMax - mmap(yearhigh, low, high, 0, CHART_Y_HEIGHT); 
-  tft.drawFastHLine(xMin, scaledHigh, CHART_X_WIDTH, ST7735_GREEN);
+  if(yearlow - low > 0.1f)
+  {
+    float scaledHigh = mmap(yearhigh, low, high, yMax, yMin); 
+    tft.drawFastHLine(xMin, scaledHigh, wid, ST7735_GREEN);
+  }
+
+  //grab first chart data point
+  float price0 = chartinfo[0];
+  int x0 = mmap(0, 0, MAX_CHART_POINTS, xMin, xMax);
+  float scaled0 = mmap(price0, low, high, yMax, yMin);
+  
+  for(int i = 1; i <= MAX_CHART_POINTS; i++)
+  {
+    yield();
+    //we need two points to draw a line
+    if(price0 > 0)
+    {
+      float price1 = chartinfo[i];
+      if(price1 > 0)
+      {
+        /*
+        Serial.print(i);
+        Serial.print(" ");
+        Serial.print(" price0: ");
+        Serial.print(price0);
+        Serial.print(" scaled0: ");
+        Serial.println(scaled0);
+        Serial.print("   price1: ");
+        Serial.print(price1);
+        Serial.print(" scaled1: ");
+        Serial.println(scaled1);
+        Serial.print("   movingAvg: ");
+        Serial.print(movingAvg);
+        Serial.print(" scaledAvg: ");
+        Serial.println(scaledAvg);
+        */
+        float scaled1 = mmap(price1, low, high, yMax, yMin);
+        int x1 = mmap(i, 0, MAX_CHART_POINTS, xMin, xMax);
+        int color = (price0 > movingAvg || price1 > movingAvg) ? ST7735_GREEN : ST7735_RED;
+        tft.drawLine(x0, scaled0, x1, scaled1, color);
+        
+        price0 = price1;
+        scaled0 = scaled1;
+        x0 = x1;
+      }
+    }
+  }
 
   //print the ticker
-  int16_t x = xMax - (CHART_X_SPACING*1.75);
-  int16_t y = yMin + (CHART_Y_SPACING/1.25);
+  int16_t x = xMax - (CHART_X_SPACING*2);
+  int16_t y = yMin + (CHART_Y_SPACING/1.3);
   int16_t xbounds;
   int16_t ybounds;
   uint16_t width;
@@ -356,66 +430,49 @@ void printChart()
   tft.fillRect(xbounds-2, ybounds-2, width+3, height+3, ST7735_BLACK);
   tft.setCursor(x, y);
   tft.print(tickers[0]);
-
-  //grab first chart data point
-  float price0 = chartinfo[0];
-  int x0 = mmap(0, 0, MAX_CHART_POINTS, xMin, xMax);
-  float scaled0 = yMax - mmap(price0, low, high, 0, CHART_Y_HEIGHT);
   
-  for(int i = 1; i < MAX_CHART_POINTS - 1; i++)
-  {
-    yield();
-    //we need two points to draw a line
-    if(price0 > 0)
-    {
-      float price1 = chartinfo[i+1];
-      float scaled1 = yMax - mmap(price1, low, high, 0, CHART_Y_HEIGHT);
-      
-      if(price1 > 0)
-      {
-        /*
-        Serial.print(i);
-        Serial.print(" ");
-        Serial.print(" price0: ");
-        Serial.print(price0);
-        Serial.print(" scaled0: ");
-        Serial.print(scaled0);
-        Serial.print(" price1: ");
-        Serial.print(price1);
-        Serial.print(" scaled1: ");
-        Serial.print(scaled1);
-        Serial.print(" movingAvg: ");
-        Serial.print(movingAvg);
-        Serial.print(" scaledAvg: ");
-        Serial.println(scaledAvg);
-        */
-        int x1 = mmap(i+1, 0, MAX_CHART_POINTS, xMin, xMax);
-        int color = (price0 > movingAvg && price1 > movingAvg) ? ST7735_GREEN : ST7735_RED;
-        tft.drawLine(x0, scaled0, x1, scaled1, color);
-        price0 = price1;
-        scaled0 = scaled1;
-        x0 = x1;
-      }
-    }
-  }
   printWifiInfo(false); 
 }
 
 void printTBill()
 {
+  /* Testing
+  strcpy(tbilldates[0], "1/2");
+  strcpy(tbilldates[1], "1/3");
+  strcpy(tbilldates[2], "1/4");
+  tbillyields[0] = 1.0f;
+  tbillyields[1] = 2.0f;
+  tbillyields[2] = 3.0f;
+  */
+  
   tft.fillScreen(ST7735_BLACK);
   tft.setTextColor(ST7735_WHITE);
   tft.setTextSize(1);
+
+  //use these, not the header contants
+  const int yMin = CHART_Y_ORIGIN + 20;
+  const int yMax = yMin + CHART_Y_HEIGHT - 20;
+  const int xMin = CHART_X_ORIGIN;
+  const int xMax = xMin + CHART_X_WIDTH;
+
+  /*
+  Serial.print("yMin: ");
+  Serial.print(yMin);
+  Serial.print(" yMax: ");
+  Serial.println(yMax);
+  */
   
   //draw the vertical lines
+  int len = yMax-yMin;
+  
   //origin
-  tft.drawFastVLine(CHART_X_ORIGIN, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
+  tft.drawFastVLine(xMin, yMin, len, ST7735_WHITE);
 
   //midpoint
-  tft.drawFastVLine(CHART_X_ORIGIN + (CHART_X_WIDTH/2), CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
+  tft.drawFastVLine(xMin + (CHART_X_WIDTH/2), yMin, len, ST7735_WHITE);
   
   //right side
-  tft.drawFastVLine(CHART_X_ORIGIN + CHART_X_WIDTH, CHART_Y_ORIGIN, CHART_Y_HEIGHT, ST7735_WHITE);
+  tft.drawFastVLine(xMax, yMin, len, ST7735_WHITE);
   
   const char priceShort [] = "%.1f";
   const char priceLong [] = "%.2f";
@@ -434,16 +491,12 @@ void printTBill()
     }
     totalDataPoints++;
   }
-  
+
   totalDataPoints--;
   /*
   Serial.print("Total data points: ");
   Serial.println(totalDataPoints);
-  */
-  float spread = (high - low) * .10;
-  high += spread;
-  low -= spread;
-  /*
+  
   Serial.print("low: ");
   Serial.print(low);
   Serial.print(" high: ");
@@ -451,25 +504,17 @@ void printTBill()
   */
   char label [10];
   //draw the horizontal lines and price labels
-  const int yMin = CHART_Y_ORIGIN;
-  const int yMax = CHART_Y_ORIGIN + CHART_Y_HEIGHT;
-  const int xMin = CHART_X_ORIGIN;
-  const int xMax = CHART_X_ORIGIN + CHART_X_WIDTH;
+  int wid = xMax - xMin;
   
   for(int y = yMin; y <= yMax; y += CHART_Y_SPACING)
   {
     //draw the line
-    tft.drawFastHLine(xMin, y, CHART_X_WIDTH, ST7735_WHITE);
-
-    //draw the price label - y incrememnts going down so need
-    //to subtract from max y value first
-    float price = mmap(yMax - y, 0, CHART_Y_HEIGHT, low, high);
-    /*
-    Serial.print("inverse y: ");
-    Serial.print(yMax - y);
-    Serial.print(" price label: ");
-    Serial.println(price);
-    */
+    tft.drawFastHLine(xMin, y, wid, ST7735_WHITE);
+    
+    //draw the price label
+    //reverse order of high low to invert scale
+    float price = mmap(y, yMin, yMax, high, low);
+    
     //slight offset because of font goofiness
     tft.setCursor(0, y-3);
     
@@ -482,50 +527,34 @@ void printTBill()
     tft.print(label);
   }
 
-  //print the title
-  int16_t x = xMax - (CHART_X_SPACING*3.00);
-  int16_t y = yMin + (CHART_Y_SPACING/1.25);
-  int16_t xbounds;
-  int16_t ybounds;
-  uint16_t width;
-  uint16_t height;
-
-  tft.setFont(&Monospaced_plain_11); 
-  tft.setTextColor(ST7735_WHITE);
-  tft.getTextBounds(tickers[0], x, y, &xbounds, &ybounds, &width, &height);
-  tft.fillRect(xbounds-2, ybounds-2, width+3, height+3, ST7735_BLACK);
-  tft.setCursor(x, y);
-  tft.print("10 Year");
-
+  
   //date Y position
-  int textPosY = CHART_Y_ORIGIN + CHART_Y_HEIGHT + 5;
+  int textPosY = yMax + 5;
   tft.setFont();
   tft.setTextSize(1);
   //print month labels
-  tft.setCursor(CHART_X_ORIGIN-5, textPosY);
+  tft.setCursor(xMin-5, textPosY);
   tft.print(tbilldates[0]);
 
   int midPt = mmap(totalDataPoints/2, 0, totalDataPoints, xMin, xMax);
   tft.setCursor(midPt-5, textPosY);
   tft.print(tbilldates[totalDataPoints/2]);
 
-  tft.setCursor(CHART_X_ORIGIN + CHART_X_WIDTH - 20, textPosY);
+  tft.setCursor(xMax - 20, textPosY);
   tft.print(tbilldates[totalDataPoints]);
 
   //grab first chart data point
   float price0 = tbillyields[0];
   int x0 = mmap(0, 0, totalDataPoints, xMin, xMax);
-  float scaled0 = yMax - mmap(price0, low, high, 0, CHART_Y_HEIGHT);
-  
-  for(int i = 1; i < totalDataPoints; i++)
+  float scaled0 = mmap(price0, low, high, yMax, yMin);
+
+  for(int i = 1; i <= totalDataPoints; i++)
   {
     yield();
     //we need two points to draw a line
     if(price0 > 0)
     {
-      float price1 = tbillyields[i+1];
-      float scaled1 = yMax - mmap(price1, low, high, 0, CHART_Y_HEIGHT);
-      
+      float price1 = tbillyields[i];
       if(price1 > 0)
       {
         /*
@@ -534,28 +563,38 @@ void printTBill()
         Serial.print(" price0: ");
         Serial.print(price0);
         Serial.print(" scaled0: ");
-        Serial.print(scaled0);
-        Serial.print(" price1: ");
+        Serial.println(scaled0);
+        Serial.print("  price1: ");
         Serial.print(price1);
         Serial.print(" scaled1: ");
         Serial.println(scaled1);
         */
-        int x1 = mmap(i+1, 0, totalDataPoints, xMin, xMax);
+        float scaled1 = mmap(price1, low, high, yMax, yMin);
+        int x1 = mmap(i, 0, totalDataPoints, xMin, xMax);
         tft.drawLine(x0, scaled0, x1, scaled1, ST7735_GREEN);
+        
         price0 = price1;
         scaled0 = scaled1;
         x0 = x1;
       }
     }
   }
+
+  //print the header, final closing price.
+  tft.setTextSize(1);
+  tft.setTextColor(ST7735_GREEN);
+
+  char str[30];
+  sprintf(str, "%s %s %.2f%%", "10 Year TBill", tbilldates[totalDataPoints], tbillyields[totalDataPoints]);
+  tft.setCursor(10, 5);
+  tft.print(str);
+ 
   printWifiInfo(false); 
 }
 
 
-double mmap(double x, double x_min, double x_max, double y_min, double y_max)
+float mmap(float x, float x_min, float x_max, float y_min, float y_max)
 {
   return (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min;
-  //f(x) = (x - input_start) / (input_end - input_start) * (output_end - output_start) + output_start
-  //return (x - x_min) / (x_max - x_min) * (y_max - y_min) + y_min;
 }
 

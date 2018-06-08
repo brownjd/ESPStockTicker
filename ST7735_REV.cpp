@@ -5,7 +5,7 @@ void ST7735_REV::initR(uint8_t options) {
   //tabcolor is private in parent class
   tabcolor = options;
   if (options == INITR_YELLOWTAB) {
-    Serial.println("ST7735_REV.initR(): YELLOWTAB on");
+    //Serial.println("ST7735_REV.initR(): YELLOWTAB on");
     writecommand(ST77XX_MADCTL);
     writedata(0xC0);
   }
@@ -13,10 +13,10 @@ void ST7735_REV::initR(uint8_t options) {
 
 void ST7735_REV::setRotation(uint8_t m) {
   Adafruit_ST7735::setRotation(m);
-  Serial.print("ST7735_REV.setRotation(): ");
-  Serial.println(m);
+  //Serial.print("ST7735_REV.setRotation(): ");
+  //Serial.println(m);
   if (tabcolor == INITR_YELLOWTAB) {
-    Serial.println("ST7735_REV.setRotation(): YELLOWTAB on");
+    //Serial.println("ST7735_REV.setRotation(): YELLOWTAB on");
     switch (rotation) {
       case 0:
         writedata(ST77XX_MADCTL_MX | ST77XX_MADCTL_RGB);

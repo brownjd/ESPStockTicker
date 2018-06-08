@@ -53,8 +53,10 @@ void setTickers()
 
   writeTickerFile();
   httpServer.send(200, F("text/html"), F("<html><head><script>window.location.replace(\"/\");</script></head><body/></html>"));
+  
   //force a refresh
-  sinceAPIUpdate = MAX_API_INTERVAL;
+  //2 second delay is a workaround for https://github.com/esp8266/Arduino/issues/2734
+  sinceAPIUpdate = MAX_API_INTERVAL - 2000;
  
   Serial.println(F("setTickers()...done"));
 }
@@ -256,15 +258,13 @@ void queryTreasury()
     {
       const char *dateTimeStr = jsonObj.get<const char*>("currentDateTime");
       
-      //decrement month by 1 and reset day to 01;
-      int month;
       int year;
-      sscanf(dateTimeStr, "%d-%d-", &year, &month);
-
-      month--;
-      
       char dateStr [11];
-      snprintf(dateStr, 11, "%d-%02d-%s", year, month, "01"); 
+
+      //beginning of the current year
+      //snprintf(dateStr, 11, "%d-%02d-%s", year, month, "01");
+      sscanf(dateTimeStr, "%d-", &year);
+      snprintf(dateStr, 11, "%d-%s-%s", year, "01", "01"); 
       
       requestBuffer[0] = '\0';
       sprintf(requestBuffer, TBILL_URL, dateStr);
@@ -308,35 +308,32 @@ void checkAvailableFirmwareVersion()
 
 bool bufferToFile(const char *host, const char *buf, const char* filename)
 {
+  //Serial.println(F("bufferToFile()..."));
+  
   WiFiClientSecure client;
   getConnection(&client, host, HTTPS_PORT, buf);
 
-  //get the data    
-  int size = client.available();
-  Serial.print(F("HTTP response size: "));
-  Serial.println(size);
+  bool ret = client.available() ? true: false;
   
-  if (size)
+  File f = SPIFFS.open(filename, "w");
+  while(client.available())
   {
-    File f = SPIFFS.open(filename, "w");
-    f.print(client.readString());
-    f.close();
+    yield();
+    f.write(client.read());
   }
-  else
-  {
-    String s = F("Empty HTTP response.");
-    Serial.println(s);
-    printStatusMsg(s);
-    return false;
-  }
+  f.close();
 
-  return true;
+  //Serial.println(F("bufferToFile()...done"));
+  return ret;
 }
 
 bool getConnection(WiFiClient *client, const char *host, const int port, const char *buf)
 { 
+  //Serial.println(F("getConnection()..."));
+  bool ret = true;
   client->setTimeout(CLIENT_TIMEOUT);
-  
+
+  yield();
   if(client->connect(host, port))
   {
     yield();
@@ -359,9 +356,11 @@ bool getConnection(WiFiClient *client, const char *host, const int port, const c
     Serial.print(F("Remote host unreachable: "));
     Serial.println(host);
     printStatusMsg(F("Remote host unreachable."));
-    return false;
+    ret = false;
   }
-  return true;
+  
+  //Serial.println(F("getConnection()...done"));
+  return ret;
 }
 
 

@@ -23,7 +23,7 @@
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.19
+#define VERSION 2.20
 
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
@@ -72,7 +72,6 @@ const char* PRICING_FILE = "/prices.json";
 const char* KEY_STATS_FILE = "keystats.json";
 const char* TBILL_FILE = "tbill.csv";
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
-const char* ROTATION_FILE = "/rotation.txt";
 
 const char* IEX_HOST = "api.iextrading.com";
 const char* PRICING_CHART_URL = "GET /1.0/stock/market/batch?filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=%s HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
@@ -119,7 +118,7 @@ const int MAX_API_INTERVAL = 60000;
 //how often to check for new firmware in ms
 const int MAX_FW_INTERVAL = 600000;
 //how often to switch display pages in ms
-const int MAX_PRINT_INTERVAL = 8500;
+const int MAX_PRINT_INTERVAL = 9500;
 //how long to remain in AP mode before rebooting
 const int MAX_AP_INTERVAL = 120000;
 
@@ -141,11 +140,10 @@ char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
 //PRICE, CHANGE
 float prices[TICKER_COUNT][2];
 //holds list of treasury yields
-const int MAX_TBILLS = 62;
+const int MAX_TBILLS = 365;
 const int MAX_TBILL_DATE_LEN = 11;
 char tbilldates[MAX_TBILLS][MAX_TBILL_DATE_LEN];
 float tbillyields[MAX_TBILLS];
-
 
 //how many minutes between data points to request
 const int CHART_INTERVAL = 2;
@@ -186,12 +184,19 @@ void setup()
   SPIFFS.remove(CHART_FILE);
   SPIFFS.remove(PRICING_FILE);
   SPIFFS.remove(KEY_STATS_FILE);
+  SPIFFS.remove(TBILL_FILE);
+  SPIFFS.remove(FW_REMOTE_VERSION_FILE);
 
   initScreen();
+  yield();
   setupIPHandlers();
+  yield();
   connectWifi();
+  yield();
   setupWebServer();
+  yield();
   setupOTA();
+  yield();
   readTickerFile();
 }
 
@@ -225,7 +230,7 @@ void loop()
       }
       sinceFWUpdate = 0;
     }
-
+    
     if (sinceAPIUpdate >= MAX_API_INTERVAL)
     {
       yield();
@@ -241,6 +246,7 @@ void loop()
       httpServer.handleClient();
       sinceAPIUpdate = 0;
     }
+    
     if(sincePrint >= MAX_PRINT_INTERVAL)
     {
       yield();
@@ -274,7 +280,6 @@ void updatePrices()
     prices[tickerNum][1] = 0.0;
   }
 
-  
   File f = SPIFFS.open(PRICING_FILE, "r");
   Serial.print(F("Price file size: "));
   Serial.println(f.size());
@@ -332,7 +337,7 @@ void updateChartInfo()
   //clear out memory
   for(int i = 0; i < MAX_CHART_POINTS; i++)
   {
-    chartinfo[i] = 0;
+    chartinfo[i] = 0.0f;
   }
   
   File f = SPIFFS.open(CHART_FILE, "r");
@@ -348,9 +353,9 @@ void updateChartInfo()
     for(int i = 0; i < MAX_CHART_POINTS && f.available(); i++)
     {
       yield();
-      DynamicJsonBuffer jsonBuffer(100);
+      DynamicJsonBuffer jsonBuffer(150);
       JsonObject &jsonDataPoint = jsonBuffer.parseObject(f);
-    
+ 
       if(jsonDataPoint.success())
       {          
           chartinfo[i] = jsonDataPoint[F("average")];
