@@ -23,7 +23,7 @@
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.20
+#define VERSION 2.21
 
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
@@ -258,7 +258,7 @@ void loop()
     }
   }
 
-  //we don't want to wait around for ever in adhoc mode
+  //we don't want to wait around forever in adhoc mode
   if(WiFi.getMode() == WIFI_AP && sinceAPStart >= MAX_AP_INTERVAL )
   {
     Serial.println("Rebooting due to time limit for SoftAP.");

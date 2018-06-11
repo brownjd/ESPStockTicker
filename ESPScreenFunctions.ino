@@ -244,8 +244,9 @@ bool printTicker(int tickerNum)
 
 void printChart()
 {
-  /* Testing
-   //clear out memory
+  ///Testing
+  /*
+  //clear out memory
   for(int i = 0; i < MAX_CHART_POINTS; i++)
   {
     chartinfo[i] = 0.0f;
@@ -264,7 +265,6 @@ void printChart()
   yearhigh = 4.0f;
   movingAvg = 1.25f;
   */
-  
   tft.fillScreen(ST7735_BLACK);
   tft.setTextColor(ST7735_WHITE);
   tft.setTextSize(1);
@@ -379,15 +379,16 @@ void printChart()
   int x0 = mmap(0, 0, MAX_CHART_POINTS, xMin, xMax);
   float scaled0 = mmap(price0, low, high, yMax, yMin);
   
-  for(int i = 1; i <= MAX_CHART_POINTS; i++)
+  for(int i = 1; i < MAX_CHART_POINTS; i++)
   {
     yield();
     //we need two points to draw a line
     if(price0 > 0)
     {
-      float price1 = chartinfo[i];
+      const float price1 = chartinfo[i];
       if(price1 > 0)
       {
+        const float scaled1 = mmap(price1, low, high, yMax, yMin);
         /*
         Serial.print(i);
         Serial.print(" ");
@@ -404,14 +405,20 @@ void printChart()
         Serial.print(" scaledAvg: ");
         Serial.println(scaledAvg);
         */
-        float scaled1 = mmap(price1, low, high, yMax, yMin);
-        int x1 = mmap(i, 0, MAX_CHART_POINTS, xMin, xMax);
-        int color = (price0 > movingAvg || price1 > movingAvg) ? ST7735_GREEN : ST7735_RED;
+        const int x1 = mmap(i, 0, MAX_CHART_POINTS, xMin, xMax);
+        const int color = (price0 > movingAvg || price1 > movingAvg) ? ST7735_GREEN : ST7735_RED;
         tft.drawLine(x0, scaled0, x1, scaled1, color);
         
         price0 = price1;
         scaled0 = scaled1;
         x0 = x1;
+      }
+      //zeroes are expected as the array is initalized to all zeroes.
+      else if(price1 < 0)
+      {
+        Serial.print(i);
+        Serial.print(F(" Skipping bogus price: "));
+        Serial.println(price1);
       }
     }
   }
@@ -436,10 +443,12 @@ void printChart()
 
 void printTBill()
 {
-  /* Testing
+  // Testing
+  /*
   strcpy(tbilldates[0], "1/2");
   strcpy(tbilldates[1], "1/3");
   strcpy(tbilldates[2], "1/4");
+  tbilldates[3][0] = '\0';
   tbillyields[0] = 1.0f;
   tbillyields[1] = 2.0f;
   tbillyields[2] = 3.0f;
@@ -492,6 +501,8 @@ void printTBill()
     totalDataPoints++;
   }
 
+  //this is not the array size. since we use this nunmber a lot for scaling,
+  //just decrement it instead of subtracting one every time we use it.
   totalDataPoints--;
   /*
   Serial.print("Total data points: ");
@@ -527,7 +538,6 @@ void printTBill()
     tft.print(label);
   }
 
-  
   //date Y position
   int textPosY = yMax + 5;
   tft.setFont();
@@ -554,9 +564,10 @@ void printTBill()
     //we need two points to draw a line
     if(price0 > 0)
     {
-      float price1 = tbillyields[i];
+      const float price1 = tbillyields[i];
       if(price1 > 0)
       {
+        const float scaled1 = mmap(price1, low, high, yMax, yMin);
         /*
         Serial.print(i);
         Serial.print(" ");
@@ -569,13 +580,18 @@ void printTBill()
         Serial.print(" scaled1: ");
         Serial.println(scaled1);
         */
-        float scaled1 = mmap(price1, low, high, yMax, yMin);
-        int x1 = mmap(i, 0, totalDataPoints, xMin, xMax);
+        const int x1 = mmap(i, 0, totalDataPoints, xMin, xMax);
         tft.drawLine(x0, scaled0, x1, scaled1, ST7735_GREEN);
         
         price0 = price1;
         scaled0 = scaled1;
         x0 = x1;
+      }
+      else
+      {
+        Serial.print(i);
+        Serial.print(F(" Skipping bogus tbill value: "));
+        Serial.println(price1);
       }
     }
   }
