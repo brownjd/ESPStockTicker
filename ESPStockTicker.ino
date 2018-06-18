@@ -23,7 +23,7 @@
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.21
+#define VERSION 2.22
 
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
@@ -71,6 +71,8 @@ const char* CHART_FILE = "/chart.json";
 const char* PRICING_FILE = "/prices.json";
 const char* KEY_STATS_FILE = "keystats.json";
 const char* TBILL_FILE = "tbill.csv";
+const char* COIN_HIST_FILE = "coinhist.json";
+
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 
 const char* IEX_HOST = "api.iextrading.com";
@@ -84,6 +86,10 @@ const char* TIME_URL = "GET /api/json/cst/now HTTP/1.0\r\nHost: worldclockapi.co
 
 const char* TBILL_HOST = "fred.stlouisfed.org";
 const char* TBILL_URL = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DGS10&fq=Daily HTTP/1.0\r\nHost: fred.stlouisfed.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+
+const char* COIN_HOST = "api.coindesk.com";
+const char* COIN_HIST_URL = "GET /v1/bpi/historical/close.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* COIN_CURR_URL = "GET /v1/bpi/currentprice/USD.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
 //used to process stock selection form submission
 //also used to create API GET request
@@ -141,9 +147,15 @@ char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
 float prices[TICKER_COUNT][2];
 //holds list of treasury yields
 const int MAX_TBILLS = 365;
-const int MAX_TBILL_DATE_LEN = 11;
-char tbilldates[MAX_TBILLS][MAX_TBILL_DATE_LEN];
+const int MAX_DATE_LEN = 11;
+char tbilldates[MAX_TBILLS][MAX_DATE_LEN];
 float tbillyields[MAX_TBILLS];
+
+float coinprice = 0.0;
+char coindate[MAX_DATE_LEN];
+const int MAX_COINS = 32;
+char coindates[MAX_COINS][MAX_DATE_LEN];
+float coinprices[MAX_COINS];
 
 //how many minutes between data points to request
 const int CHART_INTERVAL = 2;
@@ -242,6 +254,12 @@ void loop()
       yield();
       httpServer.handleClient();
       queryTreasury();
+      yield();
+      httpServer.handleClient();
+      queryCoinHistorical();
+      yield();
+      httpServer.handleClient();
+      queryCoinCurrent();
       yield();
       httpServer.handleClient();
       sinceAPIUpdate = 0;
@@ -451,20 +469,7 @@ void updateTBillInfo()
         const char *date = strtok(temp, tok);
         const char *yield = strtok(NULL, tok);
 
-        int year;
-        int month;
-        int day;
-        sscanf(date, "%d-%d-%d", &year, &month, &day);
-        /*
-        Serial.print("month: ");
-        Serial.println(month);
-        Serial.print("day: ");
-        Serial.println(day);
-        */
-        char dateStr [6];
-        snprintf(dateStr, 6, "%d/%d", month, day); 
-      
-        strncpy(tbilldates[i], dateStr, MAX_TBILL_DATE_LEN);
+        parseDate(tbilldates[i], date);
         tbillyields[i] = atof(yield); 
         /*
         Serial.print("date: ");
@@ -490,5 +495,83 @@ void updateTBillInfo()
 
   f.close();      
   Serial.println(F("updateTBillInfo()...done"));
+}
+
+void updateCoinInfo()
+{
+  Serial.println(F("updateCoinInfo()..."));
+
+  //clear out memory
+  for(int i = 0; i < MAX_COINS; i++)
+  {
+    coindates[i][0] = '\0';
+    coinprices[i] = 0.0; 
+  }
+  
+  File f = SPIFFS.open(COIN_HIST_FILE, "r");
+  Serial.print(F("Chart file size: "));
+  Serial.println(f.size());
+  
+  if(f.size() > 0)
+  {
+    DynamicJsonBuffer jsonBuffer(3000);
+    JsonObject &root = jsonBuffer.parseObject(f);
+    if(root.success())
+    {
+      JsonObject &bpi = root[F("bpi")];
+      
+      int i = 0;
+      //char debugBuf[100];
+      for(JsonObject::iterator it=bpi.begin(); it!=bpi.end() && i < MAX_COINS; ++it)
+      {
+        yield();
+        const char* date = it->key;
+        parseDate(coindates[i], date);
+        coinprices[i] = it->value;
+        /*
+        sprintf(debugBuf, "coindates[%d]: %s coinprices[%d]: %.2f", i, coindates[i], i, coinprices[i]);
+        Serial.println(debugBuf); 
+        */ 
+        i++;
+      }
+      coinprices[i] = coinprice;
+      strcpy(coindates[i],coindate);
+      /*
+      sprintf(debugBuf, "--coindates[%d]: %s coinprices[%d]: %.2f--", i, coindates[i], i, coinprices[i]);
+      Serial.println(debugBuf);
+      */  
+    }
+    else
+    {
+      String s  = F("coin data error.");
+      Serial.println(s);
+      printStatusMsg(s);
+      f.seek(0, SeekSet);
+      Serial.println(f.readString());
+      sinceAPIUpdate = MAX_API_INTERVAL;
+    }
+  }
+  
+  f.close();
+  
+  Serial.println(F("updateCoinInfo()...done"));
+}
+
+void parseDate(char target[], const char *toParse)
+{
+  int year;
+  int month;
+  int day;
+  sscanf(toParse, "%d-%d-%d", &year, &month, &day);
+  /*
+  Serial.print("month: ");
+  Serial.println(month);
+  Serial.print("day: ");
+  Serial.println(day);
+  */
+  char dateStr [6];
+  snprintf(dateStr, 6, "%d/%d", month, day); 
+  strncpy(target, dateStr, 6);
+  target[6] = '\0';
 }
 

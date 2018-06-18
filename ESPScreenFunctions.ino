@@ -127,13 +127,23 @@ void printTickers()
     page++;
   }
 
-  //last page
+  //tbill page
   else if(page == 3)
   {
     updateTBillInfo();
     yield();
     httpServer.handleClient();
     printTBill();
+    page++;
+  }
+
+  //coin page
+  else if(page == 4)
+  {
+    updateCoinInfo();
+    yield();
+    httpServer.handleClient();
+    printCoins();
     page++;
   }
 
@@ -169,7 +179,7 @@ void printTickers()
   }
 
   //last page, loop
-  if(page == 4)
+  if(page == 5)
   {
     page = 0;
   }
@@ -602,7 +612,174 @@ void printTBill()
 
   char str[30];
   sprintf(str, "%s %s %.2f%%", "10 Year TBill", tbilldates[totalDataPoints], tbillyields[totalDataPoints]);
-  tft.setCursor(10, 5);
+  tft.setCursor(0, 5);
+  tft.print(str);
+ 
+  printWifiInfo(false); 
+}
+
+void printCoins()
+{
+  tft.fillScreen(ST7735_BLACK);
+  tft.setTextColor(ST7735_WHITE);
+  tft.setTextSize(1);
+
+  //use these, not the header contants
+  const int yMin = CHART_Y_ORIGIN + 20;
+  const int yMax = yMin + CHART_Y_HEIGHT - 20;
+  const int xMin = CHART_X_ORIGIN;
+  const int xMax = xMin + CHART_X_WIDTH;
+  /*
+  Serial.print("coindate: ");
+  Serial.print(coindate);
+  Serial.print(" coinprice: ");
+  Serial.println(coinprice);
+  
+  char debugBuf[100];
+  for(int i = 0; i < MAX_COINS && coindates[i][0] != '\0'; i++)
+  {
+    sprintf(debugBuf, "coindates[%d]: %s coinprices[%d]: %.2f", i, coindates[i], i, coinprices[i]);
+    Serial.println(debugBuf);
+  }
+  Serial.print("yMin: ");
+  Serial.print(yMin);
+  Serial.print(" yMax: ");
+  Serial.println(yMax);
+  */
+  
+  //draw the vertical lines
+  int len = yMax-yMin;
+  
+  //origin
+  tft.drawFastVLine(xMin, yMin, len, ST7735_WHITE);
+
+  //midpoint
+  tft.drawFastVLine(xMin + (CHART_X_WIDTH/2), yMin, len, ST7735_WHITE);
+  
+  //right side
+  tft.drawFastVLine(xMax, yMin, len, ST7735_WHITE);
+  
+  const char priceShort [] = "%.0f";
+  const char priceLong [] = "%.1f";
+
+  //figure out min and max prices
+  float low = coinprices[0];
+  float high = coinprices[0];
+  int totalDataPoints = 0;
+  while(totalDataPoints < MAX_COINS && coindates[totalDataPoints][0] != '\0')
+  {
+    float price = coinprices[totalDataPoints];
+    if(price > 0)
+    {  
+      if(price < low) low = price;
+      if(price > high) high = price;
+    }
+    totalDataPoints++;
+  }
+
+  //this is not the array size. since we use this nunmber a lot for scaling,
+  //just decrement it instead of subtracting one every time we use it.
+  totalDataPoints--;
+  /*
+  Serial.print("Total data points: ");
+  Serial.println(totalDataPoints);
+  
+  Serial.print("low: ");
+  Serial.print(low);
+  Serial.print(" high: ");
+  Serial.println(high);
+  */
+  char label [10];
+  //draw the horizontal lines and price labels
+  int wid = xMax - xMin;
+  
+  for(int y = yMin; y <= yMax; y += CHART_Y_SPACING)
+  {
+    //draw the line
+    tft.drawFastHLine(xMin, y, wid, ST7735_WHITE);
+    
+    //draw the price label
+    //reverse order of high low to invert scale
+    float price = mmap(y, yMin, yMax, high, low);
+    
+    //slight offset because of font goofiness
+    tft.setCursor(0, y-3);
+    
+    //thousands don't have decimals
+    if(price < 1000)
+      sprintf(label, priceLong, price);
+    else
+      sprintf(label, priceShort, price);
+    
+    tft.print(label);
+  }
+
+  tft.setFont();
+  tft.setTextSize(1);
+  
+  //print month labels
+  //date Y position
+  int textPosY = yMax + 5;
+  tft.setCursor(xMin, textPosY);
+  tft.print(coindates[0]);
+
+  int midPt = mmap(totalDataPoints/2, 0, totalDataPoints, xMin, xMax);
+  tft.setCursor(midPt-5, textPosY);
+  tft.print(coindates[totalDataPoints/2]);
+
+  tft.setCursor(xMax - 17 - strlen(coindates[totalDataPoints]), textPosY);
+  tft.print(coindates[totalDataPoints]);
+
+  //grab first chart data point
+  float price0 = coinprices[0];
+  int x0 = mmap(0, 0, totalDataPoints, xMin, xMax);
+  float scaled0 = mmap(price0, low, high, yMax, yMin);
+
+  for(int i = 1; i <= totalDataPoints; i++)
+  {
+    yield();
+    //we need two points to draw a line
+    if(price0 > 0)
+    {
+      const float price1 = coinprices[i];
+      if(price1 > 0)
+      {
+        const float scaled1 = mmap(price1, low, high, yMax, yMin);
+        /*
+        Serial.print(i);
+        Serial.print(" ");
+        Serial.print(" price0: ");
+        Serial.print(price0);
+        Serial.print(" scaled0: ");
+        Serial.println(scaled0);
+        Serial.print("  price1: ");
+        Serial.print(price1);
+        Serial.print(" scaled1: ");
+        Serial.println(scaled1);
+        */
+        const int x1 = mmap(i, 0, totalDataPoints, xMin, xMax);
+        tft.drawLine(x0, scaled0, x1, scaled1, ST7735_GREEN);
+        
+        price0 = price1;
+        scaled0 = scaled1;
+        x0 = x1;
+      }
+      else
+      {
+        Serial.print(i);
+        Serial.print(F(" Skipping bogus coin value: "));
+        Serial.println(price1);
+      }
+    }
+  }
+
+  //print the header, final closing price.
+  tft.setTextSize(1);
+  tft.setTextColor(ST7735_GREEN);
+
+  char str[30];
+  sprintf(str, "%s %s %.2f", "Bitcoin Price", coindate, coinprice);
+  tft.setCursor(0, 5);
   tft.print(str);
  
   printWifiInfo(false); 

@@ -289,6 +289,66 @@ void queryTreasury()
   Serial.println(F("queryTreasury()...done"));
 }
 
+void queryCoinHistorical()
+{  
+  Serial.println(F("queryCoinHistorical()..."));
+  printStatusMsg("Updating bt historical data.");
+  
+  //const char* COIN_HIST_URL = "https://api.coindesk.com/v1/bpi/historical/close.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+
+  Serial.print(F("COIN Historical GET URL: "));
+  Serial.println(COIN_HIST_URL);
+           
+  if(!bufferToFile(COIN_HOST, COIN_HIST_URL, COIN_HIST_FILE))
+  {
+    String s  = F("BT hist error.");
+    Serial.println(s);
+    sinceAPIUpdate = MAX_API_INTERVAL;
+  }
+  
+  Serial.println(F("queryCoinHistorical()...done"));
+}
+
+void queryCoinCurrent()
+{  
+  Serial.println(F("queryCoinCurrent()..."));
+  printStatusMsg("Updating bitcoin data.");
+  
+  //const char* COIN_CURR_URL = "https://api.coindesk.com/v1/bpi/currentprice/USD.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+
+  Serial.print(F("BitCoin GET URL: "));
+  Serial.println(COIN_CURR_URL);
+  
+  WiFiClientSecure client;
+  if(getConnection(&client, COIN_HOST, HTTPS_PORT, COIN_CURR_URL))
+  {
+    DynamicJsonBuffer jsonBuffer(1000);
+    JsonObject &root = jsonBuffer.parseObject(client);
+    if(root.success())
+    {
+      JsonObject &time = root["time"];
+      parseDate(coindate, time["updatedISO"]);
+      
+      JsonObject &bpiUSD = root["bpi"]["USD"];
+      coinprice = bpiUSD.get<float>("rate_float");
+      /*
+      Serial.println(coindate);
+      Serial.println(coinprice);
+      */
+    }
+    else
+    {
+      String s  = F("BT curr error.");
+      Serial.println(s);
+      sinceAPIUpdate = MAX_API_INTERVAL;
+    }
+  }
+  
+  Serial.println(F("queryCoinCurrent()...done"));
+}
+
+
+
 void checkAvailableFirmwareVersion()
 {
   Serial.println(F("checkAvailableFirmwareVersion()..."));
