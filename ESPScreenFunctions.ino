@@ -552,17 +552,18 @@ void printTBill()
   int textPosY = yMax + 5;
   tft.setFont();
   tft.setTextSize(1);
+  
   //print month labels
-  tft.setCursor(xMin-5, textPosY);
+  tft.setCursor(xMin, textPosY);
   tft.print(tbilldates[0]);
 
   int midPt = mmap(totalDataPoints/2, 0, totalDataPoints, xMin, xMax);
   tft.setCursor(midPt-5, textPosY);
   tft.print(tbilldates[totalDataPoints/2]);
 
-  tft.setCursor(xMax - 20, textPosY);
+  tft.setCursor(xMax - 17 - strlen(tbilldates[totalDataPoints]), textPosY);
   tft.print(tbilldates[totalDataPoints]);
-
+  
   //grab first chart data point
   float price0 = tbillyields[0];
   int x0 = mmap(0, 0, totalDataPoints, xMin, xMax);
