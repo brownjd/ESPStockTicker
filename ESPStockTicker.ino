@@ -23,7 +23,7 @@
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.22
+#define VERSION 2.23
 
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
@@ -326,7 +326,7 @@ void updatePrices()
           }
           else
           {
-            Serial.print("JSON deserialization error with ticker: ");
+            Serial.print(F("JSON deserialization error with ticker: "));
             Serial.println(ticker);
           }
         }
@@ -573,5 +573,12 @@ void parseDate(char target[], const char *toParse)
   snprintf(dateStr, 6, "%d/%d", month, day); 
   strncpy(target, dateStr, 6);
   target[6] = '\0';
+}
+
+void printFreeMem(char *str)
+{
+  char msg[50];
+  sprintf(msg, "%s() Free heap: %d", str, ESP.getFreeHeap());
+  Serial.println(msg);
 }
 

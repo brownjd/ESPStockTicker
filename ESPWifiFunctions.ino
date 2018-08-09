@@ -37,7 +37,6 @@ void setupIPHandlers()
     Serial.println(F("onStationModeGotIP()..."));
     printWifiInfo(true);
     WiFi.softAPdisconnect(true);
-    MDNS.notifyAPChange();
     Serial.println(F("onStationModeGotIP()...done"));
   });
 
@@ -47,7 +46,6 @@ void setupIPHandlers()
     
     Serial.println(F("onStationModeDisconnected.().."));
     printWifiInfo(false);
-    MDNS.notifyAPChange();
     Serial.println(F("onStationModeDisconnected()...done"));
   });
   
