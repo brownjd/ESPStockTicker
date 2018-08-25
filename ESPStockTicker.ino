@@ -23,12 +23,12 @@
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.23
+#define VERSION 2.24
 
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
-const int YELLOW_TAB_SIZE = 1;
-const char YELLOW_TABS[YELLOW_TAB_SIZE][18] = { "60:01:94:74:4A:42" };
+const int YELLOW_TAB_SIZE = 2;
+const char YELLOW_TABS[YELLOW_TAB_SIZE][18] = { "60:01:94:74:4A:42", "68:C6:3A:9F:B6:61" };
 
 const int ROTATION_SIZE = 1;
 const char ROTATION_OVERRIDES[ROTATION_SIZE][18] = { "DC:4F:22:1C:2A:98" };
