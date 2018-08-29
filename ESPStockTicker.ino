@@ -23,7 +23,7 @@
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.24
+#define VERSION 2.25
 
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
@@ -267,12 +267,13 @@ void loop()
     
     if(sincePrint >= MAX_PRINT_INTERVAL)
     {
+      //printTickers can change sincePrint, so need to do this at the outset
+      sincePrint = 0;
       yield();
       httpServer.handleClient();
       printTickers();
       yield();
       httpServer.handleClient();
-      sincePrint = 0;
     }
   }
 
@@ -581,4 +582,3 @@ void printFreeMem(char *str)
   sprintf(msg, "%s() Free heap: %d", str, ESP.getFreeHeap());
   Serial.println(msg);
 }
-
