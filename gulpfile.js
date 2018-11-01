@@ -86,5 +86,6 @@ gulp.task('default', function() {
         .pipe(tap(function (file, t) {
           file.contents = Buffer.from(hex(file.relative, file.contents))
         }))
-        .pipe(gulp.dest(outputFolder));
+        // uncomment to write intermediate gzipped temp file
+        //.pipe(gulp.dest(outputFolder));
 });

@@ -53,3 +53,5 @@ Mkfile.old
 dkms.conf
 wifi.txt
 *.bin
+/node_modules
+package-lock.json
