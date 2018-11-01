@@ -11,7 +11,8 @@
 #include "ST7735_REV.h"
 #include "Monospaced_plain_11.h"
 //serve static html from PROGMEM
-//so we don't need a separate data filese
+//so we don't need a separate data files dir
+//use node.js gulp to regenerate from html files in data dir
 #include "index.html.gz.h"
 #include "wifi.html.gz.h"
 #include "FS.h"
@@ -23,7 +24,7 @@
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.25
+#define VERSION 2.26
 
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
@@ -83,6 +84,8 @@ const char* KEY_STATS_URL = "GET /1.0/stock/%s/stats?filter=week52low,week52high
 
 const char* TIME_HOST = "worldclockapi.com";
 const char* TIME_URL = "GET /api/json/cst/now HTTP/1.0\r\nHost: worldclockapi.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+
+//https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=bcb44e369321bfb3f&lastobs=180&from=&to=&filetype=csv&label=omit&layout=seriescolumn
 
 const char* TBILL_HOST = "fred.stlouisfed.org";
 const char* TBILL_URL = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DGS10&fq=Daily HTTP/1.0\r\nHost: fred.stlouisfed.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
@@ -167,6 +170,10 @@ float chartinfo[MAX_CHART_POINTS];
 float movingAvg = 0.0f;
 float yearlow = 0.0f;
 float yearhigh = 0.0f;
+
+//TODO: create a settings file
+bool SHOW_TBILLS = true;
+bool SHOW_BITCOIN = true;
 
 //re-used and cleared to make API calls for prices and chart info
 char requestBuffer [GET_REQUEST_BUFFER_SIZE] = {""};
@@ -253,25 +260,31 @@ void loop()
       queryChartInfo();
       yield();
       httpServer.handleClient();
-      queryTreasury();
-      yield();
-      httpServer.handleClient();
-      queryCoinHistorical();
-      yield();
-      httpServer.handleClient();
-      queryCoinCurrent();
-      yield();
-      httpServer.handleClient();
+      if(SHOW_TBILLS)
+      {
+        queryTreasury();
+        yield();
+        httpServer.handleClient();
+      }
+      if(SHOW_BITCOIN)
+      {
+        queryCoinHistorical();
+        yield();
+        httpServer.handleClient();
+        queryCoinCurrent();
+        yield();
+        httpServer.handleClient();
+      }
       sinceAPIUpdate = 0;
     }
     
     if(sincePrint >= MAX_PRINT_INTERVAL)
     {
-      //printTickers can change sincePrint, so need to do this at the outset
+      //page can change sincePrint, so need to do this at the outset
       sincePrint = 0;
       yield();
       httpServer.handleClient();
-      printTickers();
+      displayNextPage();
       yield();
       httpServer.handleClient();
     }

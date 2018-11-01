@@ -3,6 +3,10 @@
   <head>
     <title>ESP Quote Machine</title>
     <meta name="viewport" content="width=300px, initial-scale=1"/>
+    <style type="text/css">
+      body{font: normal 14px Verdana, Geneva, sans-serif;}
+      h5{font-size: 10px;}
+    </style>
     <script type='text/javascript'>
       function getData()
       {
@@ -13,6 +17,8 @@
           {
             var root = JSON.parse(this.responseText);
             console.log(root);
+            document.getElementById("bitcoin").checked = root.bitcoin;
+            document.getElementById("tbills").checked = root.tbills;
             document.getElementById("ip").innerHTML = root.ip;
             document.getElementById("version").innerHTML = root.version;
             document.getElementById("macaddress").innerHTML = root.macaddress;
@@ -26,6 +32,8 @@
               form.appendChild(input);
               form.appendChild(document.createElement("br"));
             }
+            form.appendChild(document.createElement("br"));
+
             var submit = document.createElement("input");
             submit.type = "submit";
             submit.value = "Submit";
@@ -38,14 +46,20 @@
     </script>
   </head>
   <body onload="getData()">
-    <h3>Hostname: <span id="hostname"></span></h3>
-    <h5>IP Address: <span id="ip"></span> MAC Address: <span id="macaddress"></span></h5>
-    <h5>Version: <span id="version"></span><h5>
-        <h3>Stock Symbols:</h3>
-        <h5>The first ticker will be used to display the daily price chart</h5>
-        <form method="POST" id="tickers" action="/settickers">
-          <!-- script to dynamically create a list of these -->
-          <!-- <input type="text" name="ticker" value=""><br/>-->
-        </form>
+    <h5>The first ticker will be used to display the daily price chart</h5>
+    <form method="POST" id="tickers" action="/settickers">
+      <!-- script to dynamically create a list of these -->
+      <!-- <input type="text" name="ticker" value=""><br/>-->
+      <h5>
+        Show Bitcoin: <input id="bitcoin" name="bitcoin" type="checkbox" value="true"><br> 
+        Show TBills: <input id="tbills" name="tbills" type="checkbox" value="true">
+      </h5>
+    </form>
+    <h5>
+      Hostname: <span id="hostname"></span><br>
+      IP Address: <span id="ip"></span><br>
+      MAC Address: <span id="macaddress"></span><br>
+      Version: <span id="version"></span>
+    </h5>
   </body>
 </html>

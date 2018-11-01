@@ -66,16 +66,16 @@ void writeWifiFile(char wifis[][2][96])
 
 void readTickerFile()
 {
-  Serial.println(F("Listing files..."));
-  Dir dir = SPIFFS.openDir("/");
-  while (dir.next())
-  {
+  //Serial.println(F("Listing files..."));
+  //Dir dir = SPIFFS.openDir("/");
+  //while (dir.next())
+  //{
     //Serial.println("Filename: %s", dir.fileName());
-    File f = dir.openFile("r");
+    //File f = dir.openFile("r");
     //Serial.println("File size: %d", f.size());
     //Serial.println(f.readString());
-    f.close();
-  }
+    //f.close();
+  //}
   
   Serial.println(F("Reading ticker file..."));
   File f = SPIFFS.open(TICKER_FILE, "r");
@@ -137,7 +137,7 @@ bool compareFWVersion()
     sprintf(buf, "Local version: %f, remote version: %f", VERSION, remoteFWVersion);
     Serial.println(buf);
 
-    ret = (fabs(remoteFWVersion - VERSION) > 0.01f); 
+    ret = remoteFWVersion - VERSION > 0.01f; 
     
   }
   else

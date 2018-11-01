@@ -101,9 +101,8 @@ void printWifiInfo(bool clrScreen)
   }
 }
 
-void printTickers()
+void displayNextPage()
 {
-  //Serial.println(F("printTickers()..."));
   printWifiInfo();
   Serial.print(F("Page: "));
   Serial.println(page);
@@ -117,12 +116,18 @@ void printTickers()
     //only update on page 0
     updatePrices();
   }
-  
-  else if(page == 2)
+
+  //start work while displaying second page
+  //to avoid a pause between page flips
+  else if(page == 1)
   {
     updateChartInfo();
     yield();
     httpServer.handleClient();
+  }
+  
+  else if(page == 2)
+  {
     printChart();
     page++;
   }
@@ -130,21 +135,29 @@ void printTickers()
   //tbill page
   else if(page == 3)
   {
-    updateTBillInfo();
-    yield();
-    httpServer.handleClient();
-    printTBill();
     page++;
+    if(SHOW_TBILLS)
+    {
+      updateTBillInfo();
+      yield();
+      httpServer.handleClient();
+      printTBill();
+    }
+    else sincePrint = MAX_PRINT_INTERVAL;
   }
 
   //coin page
   else if(page == 4)
   {
-    updateCoinInfo();
-    yield();
-    httpServer.handleClient();
-    printCoins();
     page++;
+    if(SHOW_BITCOIN)
+    {
+      updateCoinInfo();
+      yield();
+      httpServer.handleClient();
+      printCoins();
+    }
+    else sincePrint = MAX_PRINT_INTERVAL;
   }
 
   httpServer.handleClient();  
@@ -554,14 +567,17 @@ void printTBill()
   tft.setTextSize(1);
   
   //print month labels
+  //first month
   tft.setCursor(xMin, textPosY);
   tft.print(tbilldates[0]);
 
+  //mid month
   int midPt = mmap(totalDataPoints/2, 0, totalDataPoints, xMin, xMax);
   tft.setCursor(midPt-5, textPosY);
   tft.print(tbilldates[totalDataPoints/2]);
 
-  tft.setCursor(xMax - 17 - strlen(tbilldates[totalDataPoints]), textPosY);
+  //final month
+  tft.setCursor(xMax - 17 - (2 * strlen(tbilldates[totalDataPoints])), textPosY);
   tft.print(tbilldates[totalDataPoints]);
   
   //grab first chart data point
@@ -727,8 +743,7 @@ void printCoins()
   int midPt = mmap(totalDataPoints/2, 0, totalDataPoints, xMin, xMax);
   tft.setCursor(midPt-5, textPosY);
   tft.print(coindates[totalDataPoints/2]);
-
-  tft.setCursor(xMax - 17 - strlen(coindates[totalDataPoints]), textPosY);
+  tft.setCursor(xMax - 17 - (2 * strlen(coindates[totalDataPoints])), textPosY);
   tft.print(coindates[totalDataPoints]);
 
   //grab first chart data point
@@ -791,4 +806,3 @@ float mmap(float x, float x_min, float x_max, float y_min, float y_max)
 {
   return (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min;
 }
-

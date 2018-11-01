@@ -29,9 +29,12 @@ void setTickers()
   Serial.print(F("args: "));
   Serial.println(httpServer.args());
   
+  SHOW_BITCOIN = String("true").equals(httpServer.arg("bitcoin"));
+  SHOW_TBILLS = String("true").equals(httpServer.arg("tbills"));
+  
   String tickerName = "ticker";
-  int i;
-  for(i = 0; i < httpServer.args() && i < TICKER_COUNT; i++)
+  int ticker_count = 0;
+  for(int i = 0; i < httpServer.args(); i++)
   {
     String value = httpServer.arg(i);
     value.toUpperCase();
@@ -40,15 +43,16 @@ void setTickers()
     //we're expecting an array of values with the same arg name
     if(httpServer.argName(i) == tickerName)
     {  
-      tickers[i][0] = '\0';
-      strncpy(tickers[i], value.c_str(), MAX_TICKER_SIZE);
+      tickers[ticker_count][0] = '\0';
+      strncpy(tickers[ticker_count], value.c_str(), MAX_TICKER_SIZE);
+      ticker_count++;
     }
   }
 
   //clear out any empty slots
-  for(; i < TICKER_COUNT; i++)
+  for(; ticker_count < TICKER_COUNT; ticker_count++)
   {
-    tickers[i][0] = '\0';
+    tickers[ticker_count][0] = '\0';
   }
 
   writeTickerFile();
@@ -72,6 +76,8 @@ void getTickers()
   root[F("hostname")] = String(hostName);
   root[F("macaddress")] = WiFi.macAddress();
   root[F("version")] = VERSION;
+  root[F("bitcoin")] = SHOW_BITCOIN;
+  root[F("tbills")] = SHOW_TBILLS;
   
   JsonArray &ticArr = root.createNestedArray("tickers");
   for(int i = 0; i < TICKER_COUNT; i++)
@@ -265,7 +271,8 @@ void queryTreasury()
       //snprintf(dateStr, 11, "%d-%02d-%s", year, month, "01");
       sscanf(dateTimeStr, "%d-", &year);
       snprintf(dateStr, 11, "%d-%s-%s", year, "01", "01"); 
-      
+
+      //create tbill url with proper begin date
       requestBuffer[0] = '\0';
       sprintf(requestBuffer, TBILL_URL, dateStr);
 
@@ -279,7 +286,7 @@ void queryTreasury()
     }
     else
     {
-      String s  = F("Time error.");
+      String s  = F("Time parse error.");
       Serial.println(s);
       printStatusMsg(s);
       sinceAPIUpdate = MAX_API_INTERVAL;
@@ -400,15 +407,23 @@ bool getConnection(WiFiClient *client, const char *host, const int port, const c
     //make the request
     client->print(buf);
 
-    //dispense with the headers we don't want
-    while (client->connected())
+    //from https://arduinojson.org/v5/example/http-client/
+    // Check HTTP status
+    char status[32] = {0};
+    client->readBytesUntil('\r', status, sizeof(status));
+    if (! (strcmp(status, "HTTP/1.0 200 OK") || (strcmp(status, "HTTP/1.1 200 OK"))))
     {
-      yield();
-      String line = client->readStringUntil('\n');
-      if (line == "\r")
-      {
-        break;
-      }
+      Serial.print(F("Unexpected response: "));
+      Serial.println(status);
+      return false;
+    }
+
+    // Skip HTTP headers
+    char endOfHeaders[] = "\r\n\r\n";
+    if (!client->find(endOfHeaders)) 
+    {
+      Serial.println(F("Invalid response"));
+      return false;
     }
   }
   else
@@ -422,7 +437,3 @@ bool getConnection(WiFiClient *client, const char *host, const int port, const c
   //Serial.println(F("getConnection()...done"));
   return ret;
 }
-
-
-
-
