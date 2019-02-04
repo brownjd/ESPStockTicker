@@ -11,17 +11,24 @@ It makes use of the following hardware:
 - ST7735 1.8 TFT 128 160 display
 - A custom circuit board (Eagle files included)
 
-The project makes use of the following libraries:
+The code can be compiled in the Arduino IDE provided you have installed the board mamanger, by specifing the   URL in the additional boards manager url field in preferences. Currently: [http://arduino.esp8266.com/stable/  package_esp8266com_index.json]
 
-- ESP8266Wifi
-- ArduinoJson
-- Adafruit ST7735 graphics driver
-- Adafruit GFX graphics library
-- IEX Trading API for real time stock information
-- Arduino OTA
-- elapsedMillis
+The project makes use of the following libraries (latest version tested):
 
-The code can be compiled in the Arduino IDE provided you have installed the board mamanger, by specifing the URL in the additional boards manager url field in preferences. Currently: [http://arduino.esp8266.com/stable/package_esp8266com_index.json]
+Board - Use board manager to install
+- ESP8266Wifi (2.4.2 - there are problems reported with 2.5.x betas)
+
+Libraries - Use library manager to install
+- ArduinoJson (5.13.4)
+- Adafruit ST7735 graphics driver (1.2.7)
+- Adafruit GFX graphics library (1.3.6)
+- Arduino OTA (part of ESP8266Wifi)
+- elapsedMillis (1.0.4)
+
+External APIs
+- IEX Trading API for real time stock information (https://iextrading.com/developer/docs/)
+- St. Louis Federal Reserve API for Treasury Bill pricing data (http://fred.stlouisfed.org)
+- CoinDesk API for Bitcoin pricing data (https://api.coindesk.com)
 
 # Setup
 
