@@ -4,7 +4,7 @@ int readWifiInfo(char wifis[][2][96])
   File f = SPIFFS.open(WIFI_FILE, "r");
   int wifiNo = 0;
   char temp[96] = "";
-  const char s[2] = " ";
+  const char s[2] = "\t";
   
   while(f.available() && wifiNo < MAX_WIFI_NETWORKS)
   {
@@ -50,7 +50,7 @@ void writeWifiFile(char wifis[][2][96])
     {
       //don't use println because it includes extra special characters
       f.print(wifis[i][0]);
-      f.print(' ');
+      f.print('\t');
       f.print(wifis[i][1]);
       Serial.print(wifis[i][0]);
       Serial.print(" : ");
