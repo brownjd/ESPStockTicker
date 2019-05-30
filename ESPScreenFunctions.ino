@@ -91,9 +91,10 @@ void printWifiInfo(bool clrScreen)
   if(WiFi.status() == WL_CONNECTED)
   {
     char msg [strlen(hostName) + 20];
-
-    sprintf(msg, "V%.2f  http://%s.local  ", VERSION, hostName);
+    String s = WiFi.localIP().toString();
+    sprintf(msg, "V%.2f  %s", VERSION, s.c_str());
     printStatusMsg(msg, clrScreen);
+    //Serial.println(msg);
   }
   else
   {
@@ -123,12 +124,13 @@ void displayNextPage()
   {
     updateChartInfo();
     yield();
-    httpServer.handleClient();
   }
   
   else if(page == 2)
   {
-    printChart();
+    char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
+    int num_tickers = readTickerFile(tickers);
+    printChart(tickers[0]);
     page++;
   }
 
@@ -138,67 +140,93 @@ void displayNextPage()
     page++;
     if(SHOW_TBILLS)
     {
-      updateTBillInfo();
+      updateFedInfo(MAX_TBILLS, TBILL_HIST_FILE);
       yield();
-      httpServer.handleClient();
-      printTBill();
+      printHistoricalChart(MAX_TBILLS, TBILL_LABEL);
     }
-    else sincePrint = MAX_PRINT_INTERVAL;
+    else sincePrint = MAX_PAGE_INTERVAL;
   }
-
-  //coin page
+  
+  //oil page
   else if(page == 4)
   {
     page++;
+    if(SHOW_OIL)
+    { 
+      updateFedInfo(MAX_OIL_PRICES, OIL_HIST_FILE);
+      yield();
+      printHistoricalChart(MAX_OIL_PRICES, OIL_LABEL);
+    }
+    else sincePrint = MAX_PAGE_INTERVAL;
+  }
+
+  //coin page
+  else if(page == 5)
+  {
+    page++;
+
     if(SHOW_BITCOIN)
     {
       updateCoinInfo();
       yield();
-      httpServer.handleClient();
-      printCoins();
+      printHistoricalChart(MAX_COINS, COIN_LABEL);
     }
-    else sincePrint = MAX_PRINT_INTERVAL;
+    else sincePrint = MAX_PAGE_INTERVAL;
   }
 
   httpServer.handleClient();  
   yield();
 
+  //this is handled differently because tickers can span
+  //more than one page.
   if(page < 2)
   {
-    int rowToPrint = page * DISPLAY_ROWS;
-    
-    if(rowToPrint > TICKER_COUNT)
-    {
-      Serial.println("rowToPrint > TICKER_COUNT - this shouldn't happen.");
-      //we've got past the end. Reset to beginning
-      rowToPrint = 0;
-      page = 0;
-    }
-
-    int lastRowToPrint = (page + 1) * DISPLAY_ROWS;
-
-    //handle the case where we might print a partial page if total rows isn't easily divisible by pages
-    lastRowToPrint = (lastRowToPrint > TICKER_COUNT) ? TICKER_COUNT : lastRowToPrint;
-
-    bool printed = false;
-    while(rowToPrint < TICKER_COUNT && rowToPrint < lastRowToPrint) 
-    {
-      if(printTicker(rowToPrint)) printed = true;
-      rowToPrint++;
-    }
-    page++;
-    //we printed an empty page, so flip to next;
-    if(!printed) sincePrint = MAX_PRINT_INTERVAL;
+    //if it returns false, we printed an empty page, so flip to next;
+    if(!printTickers()) 
+      sincePrint = MAX_PAGE_INTERVAL;
   }
 
   //last page, loop
-  if(page == 5)
+  if(page == 6)
   {
     page = 0;
   }
 }
 
-bool printTicker(int tickerNum)
+bool printTickers()
+{
+  int rowToPrint = page * DISPLAY_ROWS;
+    
+  if(rowToPrint > TICKER_COUNT)
+  {
+    Serial.println("rowToPrint > TICKER_COUNT - this shouldn't happen.");
+    //we've got past the end. Reset to beginning
+    rowToPrint = 0;
+    page = 0;
+  }
+
+  int lastRowToPrint = (page + 1) * DISPLAY_ROWS;
+
+  //handle the case where we might print a partial page if total rows isn't easily divisible by pages
+  lastRowToPrint = (lastRowToPrint > TICKER_COUNT) ? TICKER_COUNT : lastRowToPrint;
+
+  char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
+  
+  bool printed = false;
+
+  int num_tickers = readTickerFile(tickers);
+  
+  while(rowToPrint < TICKER_COUNT && rowToPrint < lastRowToPrint) 
+  {
+    if(printTicker(tickers, rowToPrint)) 
+      printed = true;
+    rowToPrint++;
+  }
+  page++;
+  return printed;
+}
+
+bool printTicker(char tickers[][MAX_TICKER_SIZE], int tickerNum)
 {
   //Serial.println(F("printTicker()..."));
   //Serial.print(F("Ticker no: "));
@@ -222,8 +250,8 @@ bool printTicker(int tickerNum)
   
     if(strlen(ticker) > 0)
     {
-      double price = prices[tickerNum][0];
-      double change = prices[tickerNum][1];
+      double price = price_list[tickerNum][0];
+      double change = price_list[tickerNum][1];
 
       int triangleBase = -100;
       int triangleTop = -100;
@@ -265,7 +293,7 @@ bool printTicker(int tickerNum)
   return ret;
 }
 
-void printChart()
+void printChart(char *ticker_name)
 {
   ///Testing
   /*
@@ -323,8 +351,9 @@ void printChart()
   float high = yearhigh;
   for(int i = 0; i < MAX_CHART_POINTS; i++)
   {
-    float price = chartinfo[i];
-    if(price > 0)
+    float price = price_list[i][0];
+    //Serial.println(price);
+    if(price > 0.0f)
     { 
       if(low - price > 0.1f) low = price;
       if(price - high > 0.1f) high = price;
@@ -347,7 +376,7 @@ void printChart()
   Serial.print(yearhigh);
   Serial.print(" 200 day avg: ");
   Serial.println(movingAvg);
-  */
+  */  
   char label [10];
 
   char priceShort [] = "%.0f";
@@ -398,7 +427,7 @@ void printChart()
   }
 
   //grab first chart data point
-  float price0 = chartinfo[0];
+  float price0 = price_list[0][0];
   int x0 = mmap(0, 0, MAX_CHART_POINTS, xMin, xMax);
   float scaled0 = mmap(price0, low, high, yMax, yMin);
   
@@ -408,7 +437,7 @@ void printChart()
     //we need two points to draw a line
     if(price0 > 0)
     {
-      const float price1 = chartinfo[i];
+      const float price1 = price_list[i][0];
       if(price1 > 0)
       {
         const float scaled1 = mmap(price1, low, high, yMax, yMin);
@@ -456,187 +485,17 @@ void printChart()
 
   tft.setFont(&Monospaced_plain_11); 
   tft.setTextColor(ST7735_WHITE);
-  tft.getTextBounds(tickers[0], x, y, &xbounds, &ybounds, &width, &height);
+  tft.getTextBounds(ticker_name, x, y, &xbounds, &ybounds, &width, &height);
   tft.fillRect(xbounds-2, ybounds-2, width+3, height+3, ST7735_BLACK);
   tft.setCursor(x, y);
-  tft.print(tickers[0]);
+  tft.print(ticker_name);
   
   printWifiInfo(false); 
 }
 
-void printTBill()
+void printHistoricalChart(int max_data_points, const char *title)
 {
-  // Testing
-  /*
-  strcpy(tbilldates[0], "1/2");
-  strcpy(tbilldates[1], "1/3");
-  strcpy(tbilldates[2], "1/4");
-  tbilldates[3][0] = '\0';
-  tbillyields[0] = 1.0f;
-  tbillyields[1] = 2.0f;
-  tbillyields[2] = 3.0f;
-  */
-  
-  tft.fillScreen(ST7735_BLACK);
-  tft.setTextColor(ST7735_WHITE);
-  tft.setTextSize(1);
-
-  //use these, not the header contants
-  const int yMin = CHART_Y_ORIGIN + 20;
-  const int yMax = yMin + CHART_Y_HEIGHT - 20;
-  const int xMin = CHART_X_ORIGIN;
-  const int xMax = xMin + CHART_X_WIDTH;
-
-  /*
-  Serial.print("yMin: ");
-  Serial.print(yMin);
-  Serial.print(" yMax: ");
-  Serial.println(yMax);
-  */
-  
-  //draw the vertical lines
-  int len = yMax-yMin;
-  
-  //origin
-  tft.drawFastVLine(xMin, yMin, len, ST7735_WHITE);
-
-  //midpoint
-  tft.drawFastVLine(xMin + (CHART_X_WIDTH/2), yMin, len, ST7735_WHITE);
-  
-  //right side
-  tft.drawFastVLine(xMax, yMin, len, ST7735_WHITE);
-  
-  const char priceShort [] = "%.1f";
-  const char priceLong [] = "%.2f";
-
-  //figure out min and max prices
-  float low = tbillyields[0];
-  float high = tbillyields[0];
-  int totalDataPoints = 0;
-  while(totalDataPoints < MAX_TBILLS && tbilldates[totalDataPoints][0] != '\0')
-  {
-    float yield = tbillyields[totalDataPoints];
-    if(yield > 0)
-    {  
-      if(yield < low) low = yield;
-      if(yield > high) high = yield;
-    }
-    totalDataPoints++;
-  }
-
-  //this is not the array size. since we use this nunmber a lot for scaling,
-  //just decrement it instead of subtracting one every time we use it.
-  totalDataPoints--;
-  /*
-  Serial.print("Total data points: ");
-  Serial.println(totalDataPoints);
-  
-  Serial.print("low: ");
-  Serial.print(low);
-  Serial.print(" high: ");
-  Serial.println(high);
-  */
-  char label [10];
-  //draw the horizontal lines and price labels
-  int wid = xMax - xMin;
-  
-  for(int y = yMin; y <= yMax; y += CHART_Y_SPACING)
-  {
-    //draw the line
-    tft.drawFastHLine(xMin, y, wid, ST7735_WHITE);
-    
-    //draw the price label
-    //reverse order of high low to invert scale
-    float price = mmap(y, yMin, yMax, high, low);
-    
-    //slight offset because of font goofiness
-    tft.setCursor(0, y-3);
-    
-    //thousands don't have decimals
-    if(price < 1000)
-      sprintf(label, priceLong, price);
-    else
-      sprintf(label, priceShort, price);
-    
-    tft.print(label);
-  }
-
-  //date Y position
-  int textPosY = yMax + 5;
-  tft.setFont();
-  tft.setTextSize(1);
-  
-  //print month labels
-  //first month
-  tft.setCursor(xMin, textPosY);
-  tft.print(tbilldates[0]);
-
-  //mid month
-  int midPt = mmap(totalDataPoints/2, 0, totalDataPoints, xMin, xMax);
-  tft.setCursor(midPt-5, textPosY);
-  tft.print(tbilldates[totalDataPoints/2]);
-
-  //final month
-  tft.setCursor(xMax - 17 - (2 * strlen(tbilldates[totalDataPoints])), textPosY);
-  tft.print(tbilldates[totalDataPoints]);
-  
-  //grab first chart data point
-  float price0 = tbillyields[0];
-  int x0 = mmap(0, 0, totalDataPoints, xMin, xMax);
-  float scaled0 = mmap(price0, low, high, yMax, yMin);
-
-  for(int i = 1; i <= totalDataPoints; i++)
-  {
-    yield();
-    //we need two points to draw a line
-    if(price0 > 0)
-    {
-      const float price1 = tbillyields[i];
-      if(price1 > 0)
-      {
-        const float scaled1 = mmap(price1, low, high, yMax, yMin);
-        /*
-        Serial.print(i);
-        Serial.print(" ");
-        Serial.print(" price0: ");
-        Serial.print(price0);
-        Serial.print(" scaled0: ");
-        Serial.println(scaled0);
-        Serial.print("  price1: ");
-        Serial.print(price1);
-        Serial.print(" scaled1: ");
-        Serial.println(scaled1);
-        */
-        const int x1 = mmap(i, 0, totalDataPoints, xMin, xMax);
-        tft.drawLine(x0, scaled0, x1, scaled1, ST7735_GREEN);
-        
-        price0 = price1;
-        scaled0 = scaled1;
-        x0 = x1;
-      }
-      else
-      {
-        Serial.print(i);
-        Serial.print(F(" Skipping bogus tbill value: "));
-        Serial.println(price1);
-      }
-    }
-  }
-
-  //print the header, final closing price.
-  tft.setTextSize(1);
-  tft.setTextColor(ST7735_GREEN);
-
-  char str[30];
-  sprintf(str, "%s %s %.2f%%", "10 Year TBill", tbilldates[totalDataPoints], tbillyields[totalDataPoints]);
-  tft.setCursor(0, 5);
-  tft.print(str);
- 
-  printWifiInfo(false); 
-}
-
-void printCoins()
-{
+  Serial.println("Starting printHistoricalChart()...");
   tft.fillScreen(ST7735_BLACK);
   tft.setTextColor(ST7735_WHITE);
   tft.setTextSize(1);
@@ -647,16 +506,13 @@ void printCoins()
   const int xMin = CHART_X_ORIGIN;
   const int xMax = xMin + CHART_X_WIDTH;
   /*
-  Serial.print("coindate: ");
-  Serial.print(coindate);
-  Serial.print(" coinprice: ");
-  Serial.println(coinprice);
   
   char debugBuf[100];
-  for(int i = 0; i < MAX_COINS && coindates[i][0] != '\0'; i++)
+  for(int i = 0; i < max_data_points && string_list[i][0] != '\0'; i++)
   {
-    sprintf(debugBuf, "coindates[%d]: %s coinprices[%d]: %.2f", i, coindates[i], i, coinprices[i]);
+    sprintf(debugBuf, "string_list[%d]: %s price_list[%d]: %.2f", i, string_list[i], i, price_list[i][0]);
     Serial.println(debugBuf);
+    yield();
   }
   Serial.print("yMin: ");
   Serial.print(yMin);
@@ -675,17 +531,14 @@ void printCoins()
   
   //right side
   tft.drawFastVLine(xMax, yMin, len, ST7735_WHITE);
-  
-  const char priceShort [] = "%.0f";
-  const char priceLong [] = "%.1f";
 
   //figure out min and max prices
-  float low = coinprices[0];
-  float high = coinprices[0];
+  float low = price_list[0][0];
+  float high = price_list[0][0];
   int totalDataPoints = 0;
-  while(totalDataPoints < MAX_COINS && coindates[totalDataPoints][0] != '\0')
+  while(totalDataPoints < max_data_points && string_list[totalDataPoints][0] != '\0')
   {
-    float price = coinprices[totalDataPoints];
+    float price = price_list[totalDataPoints][0];
     if(price > 0)
     {  
       if(price < low) low = price;
@@ -697,7 +550,7 @@ void printCoins()
   //this is not the array size. since we use this nunmber a lot for scaling,
   //just decrement it instead of subtracting one every time we use it.
   totalDataPoints--;
-  /*
+  
   Serial.print("Total data points: ");
   Serial.println(totalDataPoints);
   
@@ -705,8 +558,8 @@ void printCoins()
   Serial.print(low);
   Serial.print(" high: ");
   Serial.println(high);
-  */
   char label [10];
+  
   //draw the horizontal lines and price labels
   int wid = xMax - xMin;
   
@@ -721,12 +574,13 @@ void printCoins()
     
     //slight offset because of font goofiness
     tft.setCursor(0, y-3);
-    
     //thousands don't have decimals
-    if(price < 1000)
-      sprintf(label, priceLong, price);
+    if(price > 999)
+      sprintf(label, "%.0f", price);
+    else if (price > 99)
+      sprintf(label, "%.1f", price);
     else
-      sprintf(label, priceShort, price);
+      sprintf(label, "%.2f", price);
     
     tft.print(label);
   }
@@ -738,16 +592,16 @@ void printCoins()
   //date Y position
   int textPosY = yMax + 5;
   tft.setCursor(xMin, textPosY);
-  tft.print(coindates[0]);
+  tft.print(string_list[0]);
 
   int midPt = mmap(totalDataPoints/2, 0, totalDataPoints, xMin, xMax);
   tft.setCursor(midPt-5, textPosY);
-  tft.print(coindates[totalDataPoints/2]);
-  tft.setCursor(xMax - 17 - (2 * strlen(coindates[totalDataPoints])), textPosY);
-  tft.print(coindates[totalDataPoints]);
+  tft.print(string_list[totalDataPoints/2]);
+  tft.setCursor(xMax - 17 - (2 * strlen(string_list[totalDataPoints])), textPosY);
+  tft.print(string_list[totalDataPoints]);
 
   //grab first chart data point
-  float price0 = coinprices[0];
+  float price0 = price_list[0][0];
   int x0 = mmap(0, 0, totalDataPoints, xMin, xMax);
   float scaled0 = mmap(price0, low, high, yMax, yMin);
 
@@ -757,7 +611,7 @@ void printCoins()
     //we need two points to draw a line
     if(price0 > 0)
     {
-      const float price1 = coinprices[i];
+      const float price1 = price_list[i][0];
       if(price1 > 0)
       {
         const float scaled1 = mmap(price1, low, high, yMax, yMin);
@@ -783,7 +637,7 @@ void printCoins()
       else
       {
         Serial.print(i);
-        Serial.print(F(" Skipping bogus coin value: "));
+        Serial.print(F(" Skipping bogus price value: "));
         Serial.println(price1);
       }
     }
@@ -794,13 +648,13 @@ void printCoins()
   tft.setTextColor(ST7735_GREEN);
 
   char str[30];
-  sprintf(str, "%s %s %.2f", "Bitcoin Price", coindate, coinprice);
+  sprintf(str, "%s %s %.2f", title, string_list[totalDataPoints], price_list[totalDataPoints][0]);
   tft.setCursor(0, 5);
   tft.print(str);
  
   printWifiInfo(false); 
+  Serial.println("Starting printHistoricalChart()...done");
 }
-
 
 float mmap(float x, float x_min, float x_max, float y_min, float y_max)
 {

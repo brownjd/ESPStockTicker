@@ -64,18 +64,27 @@ void writeWifiFile(char wifis[][2][96])
 }
 
 
-void readTickerFile()
+int readTickerFile(char tickers[][MAX_TICKER_SIZE])
 {
-  //Serial.println(F("Listing files..."));
-  //Dir dir = SPIFFS.openDir("/");
-  //while (dir.next())
-  //{
-    //Serial.println("Filename: %s", dir.fileName());
-    //File f = dir.openFile("r");
-    //Serial.println("File size: %d", f.size());
-    //Serial.println(f.readString());
-    //f.close();
-  //}
+  /*
+  Serial.println(F("Listing files..."));
+  Dir dir = SPIFFS.openDir("/");
+  while (dir.next())
+  {
+    Serial.print("Filename: ");
+    Serial.println(dir.fileName());
+    File f = dir.openFile("r");
+    Serial.print("File size: ");
+    Serial.println(f.size());
+    Serial.println(f.readString());
+    f.close();
+  }
+  */
+
+  for(int i = 0; i < TICKER_COUNT; i++)
+  {
+    tickers[i][0] = '\0';
+  }
   
   Serial.println(F("Reading ticker file..."));
   File f = SPIFFS.open(TICKER_FILE, "r");
@@ -100,10 +109,11 @@ void readTickerFile()
   }
 
   f.close();
+  return tickerNo;
   Serial.println(F("Reading ticker file...done"));
 }
 
-void writeTickerFile()
+void writeTickerFile(char tickers[][MAX_STRING_LEN])
 {
   Serial.println(F("Writing ticker file..."));
   File f = SPIFFS.open(TICKER_FILE, "w");
@@ -134,10 +144,10 @@ bool compareFWVersion()
     float remoteFWVersion = rStr.toFloat();
 
     char buf[50];
-    sprintf(buf, "Local version: %f, remote version: %f", VERSION, remoteFWVersion);
+    sprintf(buf, "Local version: %0.2f, remote version: %0.2f", VERSION, remoteFWVersion);
     Serial.println(buf);
 
-    ret = remoteFWVersion - VERSION > 0.01f; 
+    ret = remoteFWVersion - VERSION >= 0.009f; 
     
   }
   else

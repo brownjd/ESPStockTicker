@@ -19,6 +19,7 @@
             console.log(root);
             document.getElementById("bitcoin").checked = root.bitcoin;
             document.getElementById("tbills").checked = root.tbills;
+            document.getElementById("oil").checked = root.oil;
             document.getElementById("ip").innerHTML = root.ip;
             document.getElementById("version").innerHTML = root.version;
             document.getElementById("macaddress").innerHTML = root.macaddress;
@@ -51,8 +52,9 @@
       <!-- script to dynamically create a list of these -->
       <!-- <input type="text" name="ticker" value=""><br/>-->
       <h5>
-        Show Bitcoin: <input id="bitcoin" name="bitcoin" type="checkbox" value="true"><br> 
-        Show TBills: <input id="tbills" name="tbills" type="checkbox" value="true">
+        <input id="bitcoin" name="bitcoin" type="checkbox" value="true"> Show Bitcoin Price History <br> 
+        <input id="tbills" name="tbills" type="checkbox" value="true"> Show 10 Year Treasury Bill History<br>
+        <input id="oil" name="oil" type="checkbox" value="true"> Show Oil Price History
       </h5>
     </form>
     <h5>

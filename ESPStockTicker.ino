@@ -24,7 +24,7 @@
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.26
+#define VERSION 2.27
 
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
@@ -43,20 +43,19 @@ const int HTTP_PORT = 80;
 const int HTTPS_PORT = 443;
 const int OTA_PORT = 8080;
 char hostName [20] = "esp";
-const char SOFT_AP_NAME [] = "ESPSoftAP";
+const char* SOFT_AP_NAME = "ESPSoftAP";
 
 //stock ticker api and SSL fingerprint
 //const char* SSL_FINGERPRINT = "D1 34 42 D6 30 58 2F 09 A0 8C 48 B6 25 B4 6C 05 69 A4 2E 4E";
 
 //Screen Settings
-const int MAX_TICKER_SIZE = 8;
 const int SCREEN_WIDTH = 160;
 const int SCREEN_HEIGHT = 128;
 const int ROW_HEIGHT = 15;
 const int STATUS_MSG_HEIGHT = 8;
 //calculate the number of rows we can fit in usable area
 const int DISPLAY_ROWS = (SCREEN_HEIGHT - STATUS_MSG_HEIGHT) / ROW_HEIGHT;
-const int TICKER_COUNT = 16;
+
 //screen is 160 x 128
 //column value is left hand side or start of column
 const int COLUMN_0 = 0;                     //   0 - 40  (40 px wide) SYMBOL - FIXED
@@ -71,8 +70,9 @@ const char* TICKER_FILE = "/tickers.txt";
 const char* CHART_FILE = "/chart.json";
 const char* PRICING_FILE = "/prices.json";
 const char* KEY_STATS_FILE = "keystats.json";
-const char* TBILL_FILE = "tbill.csv";
+const char* TBILL_HIST_FILE = "tbill.csv";
 const char* COIN_HIST_FILE = "coinhist.json";
+const char* OIL_HIST_FILE = "oilhist.csv";
 
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 
@@ -87,12 +87,13 @@ const char* TIME_URL = "GET /api/json/cst/now HTTP/1.0\r\nHost: worldclockapi.co
 
 //https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=bcb44e369321bfb3f&lastobs=180&from=&to=&filetype=csv&label=omit&layout=seriescolumn
 
-const char* TBILL_HOST = "fred.stlouisfed.org";
-const char* TBILL_URL = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DGS10&fq=Daily HTTP/1.0\r\nHost: fred.stlouisfed.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
-
 const char* COIN_HOST = "api.coindesk.com";
 const char* COIN_HIST_URL = "GET /v1/bpi/historical/close.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 const char* COIN_CURR_URL = "GET /v1/bpi/currentprice/USD.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+
+const char* FED_HOST = "fred.stlouisfed.org";
+const char* OIL_URL = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DCOILWTICO&fq=Daily HTTP/1.0\r\nHost: fred.stlouisfed.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* TBILL_URL = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DGS10&fq=Daily HTTP/1.0\r\nHost: fred.stlouisfed.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
 //used to process stock selection form submission
 //also used to create API GET request
@@ -127,7 +128,7 @@ const int MAX_API_INTERVAL = 60000;
 //how often to check for new firmware in ms
 const int MAX_FW_INTERVAL = 600000;
 //how often to switch display pages in ms
-const int MAX_PRINT_INTERVAL = 9500;
+const int MAX_PAGE_INTERVAL = 9500;
 //how long to remain in AP mode before rebooting
 const int MAX_AP_INTERVAL = 120000;
 
@@ -143,29 +144,34 @@ const int MAX_AP_INTERVAL = 120000;
 //LED+    VIN +5V
 //GND     GND
 
-//holds list of tickers
-char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
-//hols list of prices and percentage change - position corresponds to tickers array
-//PRICE, CHANGE
-float prices[TICKER_COUNT][2];
-//holds list of treasury yields
+const int MAX_STRINGS = 365;
+const int MAX_STRING_LEN = 11;
+
+//this gets reused to hold temp data for the page being rendered
+//pay careful attention to the data lengths. 
+//it needs to be cleared out before use.
+char string_list[MAX_STRINGS][MAX_STRING_LEN];
+float price_list[MAX_STRINGS][2]; //can hold to a set of two floats
+
+const int MAX_TICKER_SIZE = 8;
+const int TICKER_COUNT = 16;
+
+const char TBILL_LABEL[] = "10 Year TBill";
 const int MAX_TBILLS = 365;
 const int MAX_DATE_LEN = 11;
-char tbilldates[MAX_TBILLS][MAX_DATE_LEN];
-float tbillyields[MAX_TBILLS];
 
-float coinprice = 0.0;
-char coindate[MAX_DATE_LEN];
+const char OIL_LABEL[] = "Oil Price";
+const int MAX_OIL_PRICES = 365;
+
+const char COIN_LABEL[] = "Bitcoin Price";
 const int MAX_COINS = 32;
-char coindates[MAX_COINS][MAX_DATE_LEN];
-float coinprices[MAX_COINS];
 
 //how many minutes between data points to request
 const int CHART_INTERVAL = 2;
 //9:30 - 4 pm = 390 minutes / increment
 const int MAX_CHART_POINTS = 390 / CHART_INTERVAL;
 //list of prices
-float chartinfo[MAX_CHART_POINTS];
+//float chartinfo[MAX_CHART_POINTS];
 //200 day moving average
 float movingAvg = 0.0f;
 float yearlow = 0.0f;
@@ -173,7 +179,12 @@ float yearhigh = 0.0f;
 
 //TODO: create a settings file
 bool SHOW_TBILLS = true;
+bool SHOW_OIL = true;
 bool SHOW_BITCOIN = true;
+
+//no need to keep these in a temp file since they're small
+float coinprice = 0.0;
+char coindate[MAX_DATE_LEN];
 
 //re-used and cleared to make API calls for prices and chart info
 char requestBuffer [GET_REQUEST_BUFFER_SIZE] = {""};
@@ -197,13 +208,14 @@ void setup()
 {
   Serial.begin(115200);
   delay(2000);
+  Serial.println("setup()...starting");
   SPIFFS.begin();
 
   //remove temp data
   SPIFFS.remove(CHART_FILE);
   SPIFFS.remove(PRICING_FILE);
   SPIFFS.remove(KEY_STATS_FILE);
-  SPIFFS.remove(TBILL_FILE);
+  SPIFFS.remove(TBILL_HIST_FILE);
   SPIFFS.remove(FW_REMOTE_VERSION_FILE);
 
   initScreen();
@@ -214,25 +226,23 @@ void setup()
   yield();
   setupWebServer();
   yield();
-  setupOTA();
-  yield();
-  readTickerFile();
+  //setupOTA();
+  //yield();
+  Serial.println("setup()...done");
 }
 
 void loop()
 {
-  yield();
-  ArduinoOTA.handle();
-  yield();
+  //ArduinoOTA.handle();
   httpServer.handleClient();
-
+  yield();
+  
   if (WiFi.status() == WL_CONNECTED)
   {
     if (sinceFWUpdate >= MAX_FW_INTERVAL)
     {
-      yield();
-      httpServer.handleClient();
       checkAvailableFirmwareVersion();
+      yield();
       if (compareFWVersion())
       {
         printStatusMsg("Updating firmware...");
@@ -262,23 +272,30 @@ void loop()
       httpServer.handleClient();
       if(SHOW_TBILLS)
       {
-        queryTreasury();
+        queryFed(FED_HOST, TBILL_URL, TBILL_HIST_FILE);
         yield();
         httpServer.handleClient();
       }
       if(SHOW_BITCOIN)
       {
+        queryCoinCurrent();
+        yield();
+        httpServer.handleClient();
         queryCoinHistorical();
         yield();
         httpServer.handleClient();
-        queryCoinCurrent();
+        
+      }
+      if(SHOW_OIL)
+      {
+        queryFed(FED_HOST, OIL_URL, OIL_HIST_FILE);
         yield();
         httpServer.handleClient();
       }
       sinceAPIUpdate = 0;
     }
     
-    if(sincePrint >= MAX_PRINT_INTERVAL)
+    if(sincePrint >= MAX_PAGE_INTERVAL)
     {
       //page can change sincePrint, so need to do this at the outset
       sincePrint = 0;
@@ -293,23 +310,24 @@ void loop()
   //we don't want to wait around forever in adhoc mode
   if(WiFi.getMode() == WIFI_AP && sinceAPStart >= MAX_AP_INTERVAL )
   {
+    Serial.println("Wifi mode is WIFI_AP.");
     Serial.println("Rebooting due to time limit for SoftAP.");
     ESP.restart();
   }
-  
-  yield();
-  httpServer.handleClient();
 }
 
 void updatePrices()
 {
   Serial.println(F("updatePrices()..."));
 
+  char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
+  readTickerFile(tickers);
+
   //clear memory first
   for(int tickerNum = 0; tickerNum < TICKER_COUNT; tickerNum++)
   {
-    prices[tickerNum][0] = 0.0;
-    prices[tickerNum][1] = 0.0;
+    price_list[tickerNum][0] = 0.0;
+    price_list[tickerNum][1] = 0.0;
   }
 
   File f = SPIFFS.open(PRICING_FILE, "r");
@@ -317,10 +335,10 @@ void updatePrices()
   Serial.println(f.size());
   if(f.size() > 0)
   {  
-    DynamicJsonBuffer jsonBuffer(3000);
-    JsonObject &jsonQuotes = jsonBuffer.parseObject(f);
+    DynamicJsonDocument jsonQuotes(3000);
+    DeserializationError err = deserializeJson(jsonQuotes, f);
     
-    if(jsonQuotes.success())
+    if(!err)
     {
       for(int tickerNum = 0; tickerNum < TICKER_COUNT; tickerNum++)
       {
@@ -329,27 +347,18 @@ void updatePrices()
         
         if(ticker[0])
         {
-          JsonObject &quoteItem = jsonQuotes[ticker][F("quote")];
-          if(quoteItem.success())
-          {
-            float price = quoteItem[F("latestPrice")];
-            float change = quoteItem[F("changePercent")];
-        
-            prices[tickerNum][0] = price;
-            prices[tickerNum][1] = change;
-          }
-          else
-          {
-            Serial.print(F("JSON deserialization error with ticker: "));
-            Serial.println(ticker);
-          }
+          JsonObject quoteItem = jsonQuotes[ticker]["quote"];      
+          price_list[tickerNum][0] = quoteItem[F("latestPrice")];;
+          price_list[tickerNum][1] = quoteItem[F("changePercent")];;
+      
         }
       }
     }
     else
     {
-      String s  = F("Pricing data error.");
-      Serial.println(s);
+      String s  = F("Pricing data error. ");
+      Serial.print(s);
+      Serial.println(err.c_str());
       printStatusMsg(s);
       Serial.print(F("With string: "));
       f.seek(0, SeekSet);
@@ -369,7 +378,7 @@ void updateChartInfo()
   //clear out memory
   for(int i = 0; i < MAX_CHART_POINTS; i++)
   {
-    chartinfo[i] = 0.0f;
+    price_list[i][0] = 0.0f;
   }
   
   File f = SPIFFS.open(CHART_FILE, "r");
@@ -382,23 +391,28 @@ void updateChartInfo()
     // Parsing one data point at a time because the list can get 
     // long and we don't have the headroom to load all the JSON
     // in memory at once
+    DynamicJsonDocument jsonDataPoint(150);
+    yield();
     for(int i = 0; i < MAX_CHART_POINTS && f.available(); i++)
     {
       yield();
-      DynamicJsonBuffer jsonBuffer(150);
-      JsonObject &jsonDataPoint = jsonBuffer.parseObject(f);
- 
-      if(jsonDataPoint.success())
+      
+      DeserializationError err = deserializeJson(jsonDataPoint, f);
+
+      yield();
+      if(!err)
       {          
-          chartinfo[i] = jsonDataPoint[F("average")];
+          price_list[i][0] = jsonDataPoint[F("average")];
       }
       else
       {
         parseError = true;
-        String s  = F("Chart data error.");
-        Serial.println(s);
+        String s  = F("Chart data error. ");
+        Serial.print(s);
+        Serial.println(err.c_str());
         printStatusMsg(s);
       }
+      yield();
       f.find(',');
     }
   }
@@ -421,9 +435,9 @@ void updateChartInfo()
   f = SPIFFS.open(KEY_STATS_FILE, "r");
   if(f.size() > 0)
   {
-    DynamicJsonBuffer jsonBuffer(100);
-    JsonObject &jsonObj = jsonBuffer.parseObject(f);
-    if(jsonObj.success())
+    DynamicJsonDocument jsonObj(400);
+    DeserializationError err = deserializeJson(jsonObj, f);
+    if(!err)
     {
       yearlow = jsonObj[F("week52low")];
       yearhigh = jsonObj[F("week52high")];
@@ -431,8 +445,9 @@ void updateChartInfo()
     }
     else
     {
-      String s  = F("Key stats error.");
-      Serial.println(s);
+      String s  = F("Key stats error. ");
+      Serial.print(s);
+      Serial.println(err.c_str());
       printStatusMsg(s);
       f.seek(0, SeekSet);
       Serial.println(f.readString());
@@ -451,19 +466,20 @@ void updateChartInfo()
   Serial.println(F("updateChartInfo()...done"));
 }
 
-void updateTBillInfo()
+void updateFedInfo(const int max_data_points, const char* file_name)
 {
-  Serial.println(F("updateTBillInfo()..."));
+  Serial.println(F("updateFedInfo()..."));
+  Serial.println(file_name);
 
   //clear out memory
-  for(int i = 0; i < MAX_TBILLS; i++)
+  for(int i = 0; i < max_data_points; i++)
   {
-    tbilldates[i][0] = '\0';
-    tbillyields[i] = 0.0f;
+    string_list[i][0] = '\0';
+    price_list[i][0] = 0.0f;
   }
   
-  File f = SPIFFS.open(TBILL_FILE, "r");
-  Serial.print(F("TBill file size: "));
+  File f = SPIFFS.open(file_name, "r");
+  Serial.print(F("Fed file size: "));
   Serial.println(f.size());
   if(f.size() > 0)
   {
@@ -483,8 +499,8 @@ void updateTBillInfo()
         const char *date = strtok(temp, tok);
         const char *yield = strtok(NULL, tok);
 
-        parseDate(tbilldates[i], date);
-        tbillyields[i] = atof(yield); 
+        parseDate(string_list[i], date);
+        price_list[i][0] = atof(yield); 
         /*
         Serial.print("date: ");
         Serial.print(tbilldates[i]);
@@ -494,7 +510,7 @@ void updateTBillInfo()
       }
       else
       {
-        String s = F("TBill data error.");
+        String s = F("Fed data error.");
         Serial.println(s);
         printStatusMsg(s);
       }
@@ -502,7 +518,7 @@ void updateTBillInfo()
   }
   else
   {
-    String s  = F("TBill data empty.");
+    String s  = F("Fed data empty.");
     Serial.println(s);
     printStatusMsg(s);
   }
@@ -511,6 +527,7 @@ void updateTBillInfo()
   Serial.println(F("updateTBillInfo()...done"));
 }
 
+
 void updateCoinInfo()
 {
   Serial.println(F("updateCoinInfo()..."));
@@ -518,38 +535,40 @@ void updateCoinInfo()
   //clear out memory
   for(int i = 0; i < MAX_COINS; i++)
   {
-    coindates[i][0] = '\0';
-    coinprices[i] = 0.0; 
+    string_list[i][0] = '\0';
+    price_list[i][0] = 0.0f; 
   }
   
   File f = SPIFFS.open(COIN_HIST_FILE, "r");
-  Serial.print(F("Chart file size: "));
+  Serial.print(F("Coin chart file size: "));
   Serial.println(f.size());
   
   if(f.size() > 0)
   {
-    DynamicJsonBuffer jsonBuffer(3000);
-    JsonObject &root = jsonBuffer.parseObject(f);
-    if(root.success())
+    DynamicJsonDocument root(3000);
+    DeserializationError err = deserializeJson(root, f);
+    if(!err)
     {
-      JsonObject &bpi = root[F("bpi")];
+      JsonObject bpi = root[F("bpi")];
       
       int i = 0;
       //char debugBuf[100];
       for(JsonObject::iterator it=bpi.begin(); it!=bpi.end() && i < MAX_COINS; ++it)
       {
         yield();
-        const char* date = it->key;
-        parseDate(coindates[i], date);
-        coinprices[i] = it->value;
+        const char* date = it->key().c_str();
+        parseDate(string_list[i], date);
+        price_list[i][0] = it->value().as<float>();
         /*
         sprintf(debugBuf, "coindates[%d]: %s coinprices[%d]: %.2f", i, coindates[i], i, coinprices[i]);
         Serial.println(debugBuf); 
         */ 
         i++;
       }
-      coinprices[i] = coinprice;
-      strcpy(coindates[i],coindate);
+
+      //historical api only has yesterday's close, so tack on today's current price from current price api call
+      price_list[i][0] = coinprice;
+      strcpy(string_list[i], coindate);
       /*
       sprintf(debugBuf, "--coindates[%d]: %s coinprices[%d]: %.2f--", i, coindates[i], i, coinprices[i]);
       Serial.println(debugBuf);
@@ -557,8 +576,9 @@ void updateCoinInfo()
     }
     else
     {
-      String s  = F("coin data error.");
-      Serial.println(s);
+      String s  = F("coin data error. ");
+      Serial.print(s);
+      Serial.println(err.c_str());
       printStatusMsg(s);
       f.seek(0, SeekSet);
       Serial.println(f.readString());

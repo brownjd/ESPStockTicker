@@ -1,7 +1,8 @@
 WiFiEventHandler gotIPEventHandler, disconnectedEventHandler;
 
-void updateHostName()
+bool updateHostName()
 {
+  bool ret = false;
   Serial.println(F("updateHostName()..."));
   if(WiFi.status() == WL_CONNECTED)
   {
@@ -17,6 +18,7 @@ void updateHostName()
       if((MDNS.hostname(i).equals(testName)))
       {
         sprintf(testName, "%s-%d", testName, i);
+        ret = true;
       }
     }
     //set our new hostname
@@ -25,6 +27,7 @@ void updateHostName()
     Serial.println(hostName);
   }
   Serial.println(F("updateHostName()...done"));
+  return ret;
 }
 
 void setupIPHandlers()
@@ -84,7 +87,8 @@ void startSoftAP()
 void connectWifi()
 {
   Serial.println(F("connectWifi()..."));
-  //clear saved credentials
+ 
+  WiFi.setAutoConnect(true);
   
   //[ssid][password]
   // 5 rows with 2 columns (64+32) wide
@@ -98,6 +102,8 @@ void connectWifi()
     WiFi.mode(WIFI_STA);
     for(int i = 0; i < MAX_WIFI_NETWORKS && WiFi.status() != WL_CONNECTED; i++)
     {
+      Serial.print("Trying wifi no. ");
+      Serial.println(i);
       if(strlen(wifis[i][0]))
       {
         sprintf(msg, "Connecting to %s", wifis[i][0]);
@@ -113,7 +119,9 @@ void connectWifi()
       }
     }
   }
+  yield();
   setupMDNS();
+  yield();
   startSoftAP();
   Serial.println(F("connectWifi()...done"));
 }
@@ -144,7 +152,7 @@ void setupMDNS()
   }
   Serial.println(F("setupMDNS()...done"));
 }
-
+/*
 void setupOTA()
 {
   ArduinoOTA.onStart([]() 
@@ -197,4 +205,4 @@ void setupOTA()
   ArduinoOTA.setHostname(hostName);
   ArduinoOTA.begin();
 }
-
+*/

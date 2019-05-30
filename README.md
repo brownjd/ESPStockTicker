@@ -1,6 +1,6 @@
 # ESPStockTicker
 
-This project contains the necessary code to retrieve and display stock market prices for a set of stock tickers. It will also display a one day chart for a given stock ticker. 
+This project contains the necessary code to retrieve and display stock market prices for a set of stock tickers. It will also display a one day chart for a given stock ticker. It also prints a historical chart for the 10 year Treasury Bill, the WTI Crude Oil price, and Bitcoin price. These can be turned off in the settings page. 
 
 ![tickerlisting](images/tickerlisting.jpg)
 ![tickerchart](images/tickerchart.jpg)
@@ -11,15 +11,15 @@ It makes use of the following hardware:
 - ST7735 1.8 TFT 128 160 display
 - A custom circuit board (Eagle files included)
 
-The code can be compiled in the Arduino IDE provided you have installed the board mamanger, by specifing the   URL in the additional boards manager url field in preferences. Currently: [http://arduino.esp8266.com/stable/  package_esp8266com_index.json]
+The code can be compiled in the Arduino IDE provided you have installed the board mamanger, by specifing the URL in the additional boards manager url field in preferences. Currently: [http://arduino.esp8266.com/stable/  package_esp8266com_index.json]
 
 The project makes use of the following libraries (latest version tested):
 
 Board - Use board manager to install
-- ESP8266Wifi (2.4.2 - there are problems reported with 2.5.x betas)
+- ESP8266Wifi (2.5.2) - note, if you are upgrading from 2.4.x, make sure to wipe the flash or SPIFFS won't work right
 
 Libraries - Use library manager to install
-- ArduinoJson (5.13.4)
+- ArduinoJson (6.10.1)
 - Adafruit ST7735 graphics driver (1.2.7)
 - Adafruit GFX graphics library (1.3.6)
 - Arduino OTA (part of ESP8266Wifi)
