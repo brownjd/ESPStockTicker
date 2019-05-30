@@ -24,7 +24,7 @@
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.28
+#define VERSION 2.29
 
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
@@ -352,7 +352,6 @@ void updatePrices()
           JsonObject quoteItem = jsonQuotes[ticker]["quote"];      
           price_list[tickerNum][0] = quoteItem[F("latestPrice")];;
           price_list[tickerNum][1] = quoteItem[F("changePercent")];;
-      
         }
       }
     }

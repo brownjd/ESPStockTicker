@@ -118,16 +118,15 @@ void displayNextPage()
     updatePrices();
   }
 
-  //start work while displaying second page
-  //to avoid a pause between page flips
   else if(page == 1)
   {
-    updateChartInfo();
-    yield();
+    //no need to do anything
   }
   
   else if(page == 2)
   {
+    updateChartInfo();
+    yield();
     char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
     int num_tickers = readTickerFile(tickers);
     printChart(tickers[0]);
