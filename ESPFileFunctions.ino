@@ -148,7 +148,6 @@ bool compareFWVersion()
     Serial.println(buf);
 
     ret = remoteFWVersion - VERSION >= 0.009f; 
-    
   }
   else
   {

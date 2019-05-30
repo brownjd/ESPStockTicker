@@ -24,7 +24,7 @@
 #define ST7735_GREY   0xB5F6
 #define ST7735_DIMYELLOW 0xFF36
 
-#define VERSION 2.27
+#define VERSION 2.28
 
 //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
 //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
@@ -154,6 +154,7 @@ char string_list[MAX_STRINGS][MAX_STRING_LEN];
 float price_list[MAX_STRINGS][2]; //can hold to a set of two floats
 
 const int MAX_TICKER_SIZE = 8;
+
 const int TICKER_COUNT = 16;
 
 const char TBILL_LABEL[] = "10 Year TBill";
@@ -246,6 +247,7 @@ void loop()
       if (compareFWVersion())
       {
         printStatusMsg("Updating firmware...");
+        Serial.println("Updating firmware...");
         if (!ESPhttpUpdate.update(FW_BIN_URL))
         {
           if(ESPhttpUpdate.getLastError() == 11)
