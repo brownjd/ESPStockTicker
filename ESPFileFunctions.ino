@@ -1,3 +1,13 @@
+void cleanupDataFiles()
+{
+  //remove temp data
+  SPIFFS.remove(CHART_FILE);
+  SPIFFS.remove(PRICING_FILE);
+  SPIFFS.remove(KEY_STATS_FILE);
+  SPIFFS.remove(TBILL_HIST_FILE);
+  SPIFFS.remove(FW_REMOTE_VERSION_FILE);
+}
+
 int readWifiInfo(char wifis[][2][96])
 {
   Serial.println(F("readWifiInfo()..."));

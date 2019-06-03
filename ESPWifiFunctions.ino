@@ -33,22 +33,21 @@ bool updateHostName()
 void setupIPHandlers()
 {
   Serial.println(F("setupIPHandlers()..."));
-  gotIPEventHandler = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP& event)
+  gotIPEventHandler = WiFi.onStationModeGotIP([&ipchanged](const WiFiEventStationModeGotIP& event)
   {
     (void) event;
     
     Serial.println(F("onStationModeGotIP()..."));
-    printWifiInfo(true);
-    WiFi.softAPdisconnect(true);
+    ipchanged = true;
     Serial.println(F("onStationModeGotIP()...done"));
   });
 
-  disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& event)
+  disconnectedEventHandler = WiFi.onStationModeDisconnected([&ipchanged](const WiFiEventStationModeDisconnected& event)
   {
     (void) event;
     
     Serial.println(F("onStationModeDisconnected.().."));
-    printWifiInfo(false);
+    ipchanged = true;
     Serial.println(F("onStationModeDisconnected()...done"));
   });
   

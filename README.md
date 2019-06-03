@@ -11,23 +11,37 @@ It makes use of the following hardware:
 - ST7735 1.8 TFT 128 160 display
 - A custom circuit board (Eagle files included)
 
-The code can be compiled in the Arduino IDE provided you have installed the board mamanger, by specifing the URL in the additional boards manager url field in preferences. Currently: [http://arduino.esp8266.com/stable/  package_esp8266com_index.json]
+OR
+
+- Adafruit Huzzah ESP8266
+- ILI9341 Display w/ FeatherWing
+
+The code can be compiled in the Arduino IDE provided you have installed the board mamanger, by specifing the URL in the additional boards manager url field in preferences. Currently: [http://arduino.esp8266.com/stable/  package_esp8266com_index.json] - the board you select will determine which graphics libraries are used. So if you get compilation errors, make sure you've picked either NodeMCU 1.0 (ESP 12-E Module) or Adafruit Feather Huzzah ESP8266.
+
+Build with the following board settings:
+- CPU Fequency: 160 Mhz
+- Flash Size: 4M (3M SPIFFS)
+- lwIP Variant: "v2 Lower Memory"
+- VTables: Flash
+- SSL Support: All SSL Ciphers (most compatible)
+
 
 The project makes use of the following libraries (latest version tested):
 
 Board - Use board manager to install
-- ESP8266Wifi (2.5.2) - note, if you are upgrading from 2.4.x, make sure to wipe the flash or SPIFFS won't work right
+- ESP8266Wifi (2.5.2) - note, if you are upgrading from 2.4.x, make sure to wipe the flash or SPIFFS won't work correctly.
 
 Libraries - Use library manager to install
-- ArduinoJson (6.10.1)
-- Adafruit ST7735 graphics driver (1.2.7)
-- Adafruit GFX graphics library (1.3.6)
+- ArduinoJson (6.11.0)
+- Adafruit ST7735 graphics driver (1.3.4)
+- Adafruit ILI9341 graphics driver (1.5.0)
+- Adafruit GFX graphics library (1.5.3)
 - Arduino OTA (part of ESP8266Wifi)
 - elapsedMillis (1.0.4)
 
 External APIs
 - IEX Trading API for real time stock information (https://iextrading.com/developer/docs/)
-- St. Louis Federal Reserve API for Treasury Bill pricing data (http://fred.stlouisfed.org)
+- St. Louis Federal Reserve API for Treasury Bill and Oil pricing data (http://fred.stlouisfed.org)
 - CoinDesk API for Bitcoin pricing data (https://api.coindesk.com)
 
 # Setup
