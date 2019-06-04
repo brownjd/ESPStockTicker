@@ -385,6 +385,19 @@ void checkAvailableFirmwareVersion()
   Serial.println(F("checkAvailableFirmwareVersion()...done"));
 }
 
+void updateFirmware()
+{
+  if (!ESPhttpUpdate.update(FW_BIN_URL))
+  {
+    if(ESPhttpUpdate.getLastError() == 11)
+    {
+      printMsg(F("\n\n\n\n\n Please reboot to update."), true);
+    }
+    printStatusMsg(F("Failed to update firmware."));
+    Serial.println(ESPhttpUpdate.getLastError());
+    Serial.println(ESPhttpUpdate.getLastErrorString());
+  }
+}
 
 bool bufferToFile(const char *host, const char *buf, const char* filename)
 {

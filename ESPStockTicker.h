@@ -1,4 +1,4 @@
-#define VERSION 2.30
+#define VERSION 2.31
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
@@ -11,6 +11,12 @@
   #include "ST7735_REV.h"
   #include "Monospaced_plain_11.h"
   #define MONOSPACED_FONT Monospaced_plain_11
+
+  #define HISTORICAL_TITLE_FONT
+  #define HISTORICAL_TITLE_POS_X 0
+  #define HISTORICAL_TITLE_POS_Y 5
+  #define FONT_SIZE 1
+  #define HISTORICAL_CHART_FONT_SIZE 1
 
   //default triangle color - doubt we need it
   #define ST7735_GREY   0xB5F6
@@ -35,8 +41,6 @@
   const int ROTATION_SIZE = 1;
   const char ROTATION_OVERRIDES[ROTATION_SIZE][18] = { "DC:4F:22:1C:2A:98" };
 
-  #define FONT_SIZE 1
-  #define HISTORICAL_CHART_FONT_SIZE 1
   //Screen Settings
   const int SCREEN_WIDTH = 160;
   const int SCREEN_HEIGHT = 128;
@@ -69,12 +73,19 @@
   const int CHART_Y_TICKER_POS = 118;
 
   const int HISTORICAL_CHART_VERTICAL_OFFSET = 18;
+  
 #endif
 
 #ifdef ARDUINO_ESP8266_ESP12
   #include "Adafruit_ILI9341.h"
-  #include "Fonts/FreeSans9pt7b.h"
-  #define MONOSPACED_FONT FreeSans9pt7b
+  #include "Fonts/FreeSans12pt7b.h"
+  #define MONOSPACED_FONT FreeSans12pt7b
+
+  #define HISTORICAL_TITLE_FONT &MONOSPACED_FONT
+  #define HISTORICAL_TITLE_POS_X 5
+  #define HISTORICAL_TITLE_POS_Y 20
+  #define FONT_SIZE 1
+  #define HISTORICAL_CHART_FONT_SIZE 1
   
   #define TFT_CS   0
   #define TFT_DC   15
@@ -85,8 +96,7 @@
   #define TFT_YELLOW ILI9341_YELLOW
   #define TFT_GREY ILI9341_LIGHTGREY
 
-  #define FONT_SIZE 1
-  #define HISTORICAL_CHART_FONT_SIZE 2
+  
   
   //Pricing screen Settings
   #define SCREEN_WIDTH ILI9341_TFTHEIGHT
@@ -181,7 +191,7 @@ const char* TBILL_URL = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DGS10&fq=
 //also used to create API GET request
 const int GET_REQUEST_BUFFER_SIZE = 1000;
 //https client connection timeout for API calls
-const int CLIENT_TIMEOUT = 2000; //http read in ms
+const int CLIENT_TIMEOUT = 3000; //http read in ms
 
 //where to check for firmware version
 const char* FIRMWARE_HOST = "raw.githubusercontent.com";
@@ -256,11 +266,8 @@ elapsedMillis sincePrint;
 elapsedMillis sinceAPIUpdate = MAX_API_INTERVAL;
 //keep track of when to check for updates
 elapsedMillis sinceFWUpdate = MAX_FW_INTERVAL;
-//keep track of time in AP mode
-//this is to fix a problem where a power outage
-//might have the ESP not find WiFi network while
-//WiFi router is still booting up
-elapsedMillis sinceAPStart = MAX_AP_INTERVAL;
+
+ESP8266WiFiMulti wifiMulti;
 
 int page = 0;
-bool ipchanged = false;
+bool soft_AP_started = false;

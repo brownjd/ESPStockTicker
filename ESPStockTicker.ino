@@ -1,12 +1,11 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
+#include <ESP8266WiFiMulti.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266httpUpdate.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
-#include <ArduinoOTA.h>
 #include <Adafruit_GFX.h>
 #include <elapsedMillis.h>
 
@@ -32,57 +31,36 @@ void setup()
 
   initScreen();
   yield();
-  setupIPHandlers();
-  yield();
   connectWifi();
   yield();
   setupWebServer();
   yield();
-  //setupOTA();
-  //yield();
   Serial.println(F("setup()...done"));
 }
 
 void loop()
 {
-  //ArduinoOTA.handle();
   httpServer.handleClient();
   yield();
-
-  if(ipchanged)
+  startSoftAP();
+  yield();
+  httpServer.handleClient();
+  
+  if(wifiMulti.run() == WL_CONNECTED)
   {
-    Serial.println("ipchanged...");
-    printWifiInfo(true);
-    ipchanged = false;
-  }
-    
-  if (WiFi.status() == WL_CONNECTED)
-  {
-    //not in soft ap mode
-    WiFi.softAPdisconnect(true);
-    
-    if (sinceFWUpdate >= MAX_FW_INTERVAL)
+    if(sinceFWUpdate >= MAX_FW_INTERVAL)
     {
       checkAvailableFirmwareVersion();
       yield();
       if (compareFWVersion())
       {
         printStatusMsg(F("Updating firmware..."));
-        if (!ESPhttpUpdate.update(FW_BIN_URL))
-        {
-          if(ESPhttpUpdate.getLastError() == 11)
-          {
-            printMsg(F("\n\n\n\n\n Please reboot to update."), true);
-          }
-          printStatusMsg(F("Failed to update firmware."));
-          Serial.println(ESPhttpUpdate.getLastError());
-          Serial.println(ESPhttpUpdate.getLastErrorString());
-        }
+        updateFirmware();
       }
       sinceFWUpdate = 0;
     }
     
-    if (sinceAPIUpdate >= MAX_API_INTERVAL)
+    if(sinceAPIUpdate >= MAX_API_INTERVAL)
     {
       yield();
       httpServer.handleClient();
@@ -130,14 +108,6 @@ void loop()
       yield();
       httpServer.handleClient();
     }
-  }
-
-  //we don't want to wait around forever in adhoc mode
-  if(WiFi.getMode() == WIFI_AP && sinceAPStart >= MAX_AP_INTERVAL )
-  {
-    Serial.println(F("Wifi mode is WIFI_AP."));
-    Serial.println(F("Rebooting due to time limit for SoftAP."));
-    ESP.restart();
   }
 }
 
@@ -316,7 +286,7 @@ void updateFedInfo(const int max_data_points, const char* file_name)
     {
       int size = f.readBytesUntil('\n', temp, 20);
       temp[size] = '\0';
-      //Serial.println(temp);
+      //Serial.printf("updateFedInfo() size: %d temp: %s\n", size, temp);
       if(size > 1)
       {
         const char *date = strtok(temp, tok);

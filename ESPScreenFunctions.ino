@@ -86,12 +86,13 @@ void printMsg(String msg, int x, int y, bool clrScreen)
   tft.setCursor(0, y);
   tft.print(msg);
   tft.setTextWrap(false);
+
+  Serial.printf("printMsg: %s\n", msg.c_str());
 }
 
 void printStatusMsg(String msg, bool clrScreen)
 {
   printMsg(msg, 0, SCREEN_HEIGHT - STATUS_MSG_HEIGHT, clrScreen);
-  Serial.printf("Status message: %s\n", msg.c_str());
 }
 
 void printStatusMsg(String msg)
@@ -106,7 +107,8 @@ void printWifiInfo()
 
 void printWifiInfo(bool clrScreen)
 {
-  if(WiFi.status() == WL_CONNECTED)
+  int status = WiFi.status();
+  if(status == WL_CONNECTED)
   {
     char msg [strlen(hostName) + 20];
     String s = WiFi.localIP().toString();
@@ -117,6 +119,7 @@ void printWifiInfo(bool clrScreen)
   else
   {
     printStatusMsg(F("Wifi disconnected"), clrScreen);
+    Serial.printf("Wifi status: %d\n", status);
   }
 }
 
@@ -666,12 +669,13 @@ void printHistoricalChart(int max_data_points, const char *title)
   }
 
   //print the header, final closing price.
+  tft.setFont(HISTORICAL_TITLE_FONT);
   tft.setTextSize(HISTORICAL_CHART_FONT_SIZE);
   tft.setTextColor(TFT_GREEN);
 
   char str[30];
   sprintf(str, "%s %s %.2f", title, string_list[totalDataPoints], price_list[totalDataPoints][0]);
-  tft.setCursor(0, 5);
+  tft.setCursor(HISTORICAL_TITLE_POS_X, HISTORICAL_TITLE_POS_Y);
   tft.print(str);
  
   printWifiInfo(false); 
