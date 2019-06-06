@@ -87,7 +87,7 @@ void printMsg(String msg, int x, int y, bool clrScreen)
   tft.print(msg);
   tft.setTextWrap(false);
 
-  Serial.printf("printMsg: %s\n", msg.c_str());
+  Serial.printf_P(PSTR("\tprintMsg: %s\n"), msg.c_str());
 }
 
 void printStatusMsg(String msg, bool clrScreen)
@@ -118,16 +118,15 @@ void printWifiInfo(bool clrScreen)
   }
   else
   {
-    printStatusMsg(F("Wifi disconnected"), clrScreen);
-    Serial.printf("Wifi status: %d\n", status);
+    printStatusMsg(F("WiFi disconnected"), clrScreen);
+    Serial.printf_P(PSTR("\tWiFi status: %d\n"), status);
   }
 }
 
 void displayNextPage()
 {
   printWifiInfo();
-  Serial.print(F("Page: "));
-  Serial.println(page);
+  Serial.printf_P(PSTR("\tPage: %d\n"), page);
 
   page = (page < 0 ) ? 0 : page;
 
@@ -219,7 +218,7 @@ bool printTickers()
     
   if(rowToPrint > TICKER_COUNT)
   {
-    Serial.println("rowToPrint > TICKER_COUNT - this shouldn't happen.");
+    Serial.println(F("rowToPrint > TICKER_COUNT - this shouldn't happen."));
     //we've got past the end. Reset to beginning
     rowToPrint = 0;
     page = 0;
@@ -490,9 +489,7 @@ void printChart(char *ticker_name)
       //zeroes are expected as the array is initalized to all zeroes.
       else if(price1 < 0)
       {
-        Serial.print(i);
-        Serial.print(F(" Skipping bogus price: "));
-        Serial.println(price1);
+        Serial.printf_P(PSTR("\ti: %d skipping invalid price: %f\n"), i, price1);
       }
     }
   }
@@ -661,9 +658,7 @@ void printHistoricalChart(int max_data_points, const char *title)
       }
       else
       {
-        Serial.print(i);
-        Serial.print(F(" Skipping bogus price value: "));
-        Serial.println(price1);
+        Serial.printf_P(PSTR("\ti: %d Skipping bogus price value: %f\n"), i, price1);
       }
     }
   }
@@ -679,7 +674,7 @@ void printHistoricalChart(int max_data_points, const char *title)
   tft.print(str);
  
   printWifiInfo(false); 
-  Serial.println("Starting printHistoricalChart()...done");
+  Serial.println(F("printHistoricalChart()...done"));
 }
 
 float mmap(float x, float x_min, float x_max, float y_min, float y_max)

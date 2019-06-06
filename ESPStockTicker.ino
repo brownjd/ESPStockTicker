@@ -23,7 +23,7 @@ void setup()
   yield();
   delay(2000);
   yield();
-  Serial.printf("\n\n*** Last reset reason: %s ***\n\n", ESP.getResetReason().c_str());
+  Serial.printf_P(PSTR("\n\n*** Last reset reason: %s ***\n\n"), ESP.getResetReason().c_str());
   Serial.println(F("setup()...starting"));
   SPIFFS.begin();
 
@@ -60,45 +60,59 @@ void loop()
       sinceFWUpdate = 0;
     }
     
-    if(sinceAPIUpdate >= MAX_API_INTERVAL)
+    if(sinceStockAPIUpdate >= MAX_STOCK_API_INTERVAL)
     {
       yield();
       httpServer.handleClient();
       queryPrices();
+      
       yield();
       httpServer.handleClient();
       queryChartInfo();
-      yield();
-      httpServer.handleClient();
+
+      sinceStockAPIUpdate = 0;
+    }
+
+    if(sinceFedAPIUpdate >= MAX_FED_API_INTERVAL)
+    {
       if(SHOW_TBILLS)
       {
-        queryFed(FED_HOST, TBILL_URL, TBILL_HIST_FILE);
         yield();
         httpServer.handleClient();
+        queryFed(FED_HOST, TBILL_URL, TBILL_HIST_FILE);
+        
       }
+      if(SHOW_OIL)
+      {
+        yield();
+        httpServer.handleClient();
+        queryFed(FED_HOST, OIL_URL, OIL_HIST_FILE);
+      }
+
+      sinceFedAPIUpdate = 0;
+    }
+
+    if(sinceCoinAPIUpdate >= MAX_COIN_API_INTERVAL)
+    {
       if(SHOW_BITCOIN)
       {
+        yield();
+        httpServer.handleClient();
         queryCoinCurrent();
         yield();
         httpServer.handleClient();
         queryCoinHistorical();
         yield();
         httpServer.handleClient();
-        
       }
-      if(SHOW_OIL)
-      {
-        queryFed(FED_HOST, OIL_URL, OIL_HIST_FILE);
-        yield();
-        httpServer.handleClient();
-      }
-      sinceAPIUpdate = 0;
+      
+      sinceCoinAPIUpdate = 0;
     }
     
     if(sincePrint >= MAX_PAGE_INTERVAL)
     {
-      Serial.printf("Heap Fragmentation: %d\n", ESP.getHeapFragmentation());
-      Serial.printf("Heap MaxFreeBlockSize: %d\n",ESP.getMaxFreeBlockSize());
+      Serial.printf_P(PSTR("\tHeap Fragmentation: %d\n"), ESP.getHeapFragmentation());
+      Serial.printf_P(PSTR("\tHeap MaxFreeBlockSize: %d\n"),ESP.getMaxFreeBlockSize());
       
       //page can change sincePrint, so need to do this at the outset
       sincePrint = 0;
@@ -126,9 +140,10 @@ void updatePrices()
   }
 
   File f = SPIFFS.open(PRICING_FILE, "r");
-  Serial.print(F("Price file size: "));
-  Serial.println(f.size());
-  if(f.size() > 0)
+  int size = f.size();
+  Serial.printf_P(PSTR("\tPrice file size: %d\n"), size);
+  
+  if(size > 0)
   {  
     DynamicJsonDocument jsonQuotes(3000);
     DeserializationError err = deserializeJson(jsonQuotes, f);
@@ -142,7 +157,7 @@ void updatePrices()
         
         if(ticker[0])
         {
-          JsonObject quoteItem = jsonQuotes[ticker]["quote"];      
+          JsonObject quoteItem = jsonQuotes[ticker][F("quote")];      
           price_list[tickerNum][0] = quoteItem[F("latestPrice")];;
           price_list[tickerNum][1] = quoteItem[F("changePercent")];;
         }
@@ -150,14 +165,13 @@ void updatePrices()
     }
     else
     {
-      String s  = F("Pricing data error. ");
-      Serial.print(s);
-      Serial.println(err.c_str());
+      const char* s  = "Pricing data error.";
+      Serial.printf_P(PSTR("\t%s %s\n"), s, err.c_str());
       printStatusMsg(s);
-      Serial.print(F("With string: "));
+
       f.seek(0, SeekSet);
       Serial.println(f.readString());
-      sinceAPIUpdate = MAX_API_INTERVAL;
+      sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
     }
   }
   f.close();
@@ -176,8 +190,7 @@ void updateChartInfo()
   }
   
   File f = SPIFFS.open(CHART_FILE, "r");
-  Serial.print(F("Chart file size: "));
-  Serial.println(f.size());
+  Serial.printf_P(PSTR("\tChart file size: %d\n"), f.size());
   bool parseError = false;
   if(f.size() > 0)
   {
@@ -201,10 +214,7 @@ void updateChartInfo()
       else
       {
         parseError = true;
-        String s  = F("Chart data error. ");
-        Serial.print(s);
-        Serial.println(err.c_str());
-        printStatusMsg(s);
+        Serial.printf_P(PSTR("\tInvalid data point i: %d %s\n"), i, err.c_str());
       }
       yield();
       f.find(',');
@@ -212,16 +222,14 @@ void updateChartInfo()
   }
   else
   {
-    String s  = F("Chart data empty.");
-    Serial.println(s);
-    printStatusMsg(s);
+    printStatusMsg(F("Chart data empty."));
   }
 
   if(parseError)
   {
     f.seek(0, SeekSet);
     Serial.println(f.readString());
-    sinceAPIUpdate = MAX_API_INTERVAL;
+    sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
   }
   
   f.close();
@@ -239,20 +247,15 @@ void updateChartInfo()
     }
     else
     {
-      String s  = F("Key stats error. ");
-      Serial.print(s);
-      Serial.println(err.c_str());
-      printStatusMsg(s);
+      Serial.printf_P(PSTR("\tKey stats error: %s\n"), err.c_str());
       f.seek(0, SeekSet);
       Serial.println(f.readString());
-      sinceAPIUpdate = MAX_API_INTERVAL;
+      sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
     }
   }
   else
   {
-    String s  = F("Key stats empty.");
-    Serial.println(s);
-    printStatusMsg(s);
+    printStatusMsg(F("Key stats empty."));
   }
   
   f.close();
@@ -272,8 +275,11 @@ void updateFedInfo(const int max_data_points, const char* file_name)
   }
   
   File f = SPIFFS.open(file_name, "r");
-  Serial.print(F("Fed file size: "));
-  Serial.println(f.size());
+  Serial.printf_P(PSTR("\tFed file size: %d\n"), f.size());
+  
+  //Serial.println(f.readString());
+  //f.seek(0, SeekSet);
+  
   if(f.size() > 0)
   {
     char temp[20] = "";
@@ -281,43 +287,43 @@ void updateFedInfo(const int max_data_points, const char* file_name)
 
     //toss first line header info
     f.readBytesUntil('\n', temp, 20);
-    
-    for(int i = 0; f.available(); i++)
+    Serial.printf("\tmax_Data_points: %d\n", max_data_points);
+    for(int i = 0; f.available() && i < max_data_points; i++)
     {
+      yield();
       int size = f.readBytesUntil('\n', temp, 20);
       temp[size] = '\0';
-      //Serial.printf("updateFedInfo() size: %d temp: %s\n", size, temp);
-      if(size > 1)
+      //Serial.printf("\tupdateFedInfo() i: %d size: %d temp: %s\n", i, size, temp);
+      if(size > 10)
       {
         const char *date = strtok(temp, tok);
-        const char *yield = strtok(NULL, tok);
-
+        const char *price = strtok(NULL, tok);
+ 
         parseDate(string_list[i], date);
-        price_list[i][0] = atof(yield); 
-        /*
-        Serial.print("date: ");
-        Serial.print(tbilldates[i]);
-        Serial.print(" yield: ");
-        Serial.println(tbillyields[i]);
-        */
+        if(price != NULL)
+        {
+          price_list[i][0] = atof(price);
+        }
+        else
+        {
+          Serial.printf_P(PSTR("\tupdateFedInfo(): invalid data point %s\n"), temp);
+        }
+        
+        //Serial.printf("\tupdateFedInfo() i: %d date: %s  price: %.1f\n", i, string_list[i], price_list[i][0]);
       }
       else
       {
-        String s = F("Fed data error.");
-        Serial.println(s);
-        printStatusMsg(s);
+        Serial.printf_P(PSTR("\tupdateFedInfo(): data point %s\n"), temp);
       }
     }
   }
   else
   {
-    String s  = F("Fed data empty.");
-    Serial.println(s);
-    printStatusMsg(s);
+    printStatusMsg(F("Fed data empty."));
   }
 
   f.close();      
-  Serial.println(F("updateTBillInfo()...done"));
+  Serial.println(F("updateFedInfo()...done"));
 }
 
 void updateCoinInfo()
@@ -332,8 +338,7 @@ void updateCoinInfo()
   }
   
   File f = SPIFFS.open(COIN_HIST_FILE, "r");
-  Serial.print(F("Coin chart file size: "));
-  Serial.println(f.size());
+  Serial.printf_P(PSTR("\tCoin chart file size: %d\n"), f.size());
   
   if(f.size() > 0)
   {
@@ -368,13 +373,12 @@ void updateCoinInfo()
     }
     else
     {
-      String s  = F("coin data error. ");
-      Serial.print(s);
-      Serial.println(err.c_str());
+      const char* s  = "coin data error. ";
+      Serial.printf_P(PSTR("\t%s %s\n"), s, err.c_str());
       printStatusMsg(s);
       f.seek(0, SeekSet);
       Serial.println(f.readString());
-      sinceAPIUpdate = MAX_API_INTERVAL;
+      sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
     }
   }
   
@@ -385,20 +389,28 @@ void updateCoinInfo()
 
 void parseDate(char target[], const char *toParse)
 {
+  //Serial.print("parseDate ");
   int year;
   int month;
   int day;
-  sscanf(toParse, "%d-%d-%d", &year, &month, &day);
-  /*
-  Serial.print("month: ");
-  Serial.println(month);
-  Serial.print("day: ");
-  Serial.println(day);
-  */
-  char dateStr [6];
-  snprintf(dateStr, 6, "%d/%d", month, day); 
-  strncpy(target, dateStr, 6);
-  target[6] = '\0';
+  int size = strlen(toParse);
+  //Serial.printf("strlen: %d ", size);
+
+  if(size >= 10)
+  {
+    sscanf(toParse, "%d-%d-%d", &year, &month, &day);
+    //Serial.printf("\tmonth: %d day: %d ", month, day);
+    
+    char dateStr [6];
+    snprintf(dateStr, 6, "%d/%d", month, day); 
+    strncpy(target, dateStr, 6);
+    target[6] = '\0';
+  }
+  else
+  {
+    Serial.printf_P(PSTR("\tparseDate: unable to parse: %s\n"), toParse);
+  }
+  //Serial.println("...done");
 }
 
 void printFreeMem(char *str)

@@ -29,9 +29,7 @@ int readWifiInfo(char wifis[][2][96])
       {
         strncpy(wifis[wifiNo][0], ssid, 32);
         strncpy(wifis[wifiNo][1], pass, 64);
-        Serial.print(wifis[wifiNo][0]);
-        Serial.print(F(" : "));
-        Serial.println(wifis[wifiNo][1]);
+        Serial.printf_P(PSTR("\t%s : %s\n"), wifis[wifiNo][0], wifis[wifiNo][1]);
         wifiNo++;
       }
     }
@@ -63,9 +61,7 @@ void writeWifiFile(char wifis[][2][96])
       f.print(wifis[i][0]);
       f.print('\t');
       f.print(wifis[i][1]);
-      Serial.print(wifis[i][0]);
-      Serial.print(" : ");
-      Serial.println(wifis[i][1]);
+      Serial.printf_P(PSTR("\t%s : %s\n"), wifis[i][0], wifis[i][1]);
     }
     f.print('\n');
   }
@@ -97,7 +93,7 @@ int readTickerFile(char tickers[][MAX_TICKER_SIZE])
     tickers[i][0] = '\0';
   }
   
-  Serial.println(F("Reading ticker file..."));
+  Serial.println(F("\tReading ticker file..."));
   File f = SPIFFS.open(TICKER_FILE, "r");
 
   int tickerNo = 0;
@@ -111,8 +107,7 @@ int readTickerFile(char tickers[][MAX_TICKER_SIZE])
       //strip off the newline
       temp[size] = '\0';
       strncpy(tickers[tickerNo], temp, MAX_TICKER_SIZE);
-      //Serial.print("Ticker: ");
-      //Serial.println(tickers[tickerNo]);
+      //Serial.printf_P(PSTR("\tTicker: %s\n", tickers[tickerNo]));
       tickerNo++;
     }
     
@@ -135,8 +130,7 @@ void writeTickerFile(char tickers[][MAX_STRING_LEN])
       //don't use println because it includes extra special characters
       f.print(tickers[i]);
       f.print('\n');
-      Serial.print(F("Ticker: "));
-      Serial.println(tickers[i]);
+      Serial.printf_P(PSTR("\tTicker: %s\n"), tickers[i]);
     }
   }
   
@@ -153,10 +147,7 @@ bool compareFWVersion()
   {
     String rStr = remote.readString();
     float remoteFWVersion = rStr.toFloat();
-
-    char buf[50];
-    sprintf(buf, "Local version: %0.2f, remote version: %0.2f", VERSION, remoteFWVersion);
-    Serial.println(buf);
+    Serial.printf_P(PSTR("\tLocal version: %0.2f, remote version: %0.2f\n"), VERSION, remoteFWVersion);
 
     ret = remoteFWVersion - VERSION >= 0.009f; 
   }

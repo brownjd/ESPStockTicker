@@ -1,24 +1,24 @@
 void setupWebServer()
 {
-  httpServer.on("/", root);
-  httpServer.on("/wifi", wifi);
-  httpServer.on("/gettickers", getTickers);
-  httpServer.on("/settickers", setTickers);
-  httpServer.on("/setwifi", setWifi);
-  httpServer.on("/getwifi", getWifi);
+  httpServer.on(F("/"), root);
+  httpServer.on(F("/wifi"), wifi);
+  httpServer.on(F("/gettickers"), getTickers);
+  httpServer.on(F("/settickers"), setTickers);
+  httpServer.on(F("/setwifi"), setWifi);
+  httpServer.on(F("/getwifi"), getWifi);
   httpServer.begin();
 }
 
 //This is so cool
 void root()
 {
-  httpServer.sendHeader("Content-Encoding", "gzip", true);
+  httpServer.sendHeader(F("Content-Encoding"), F("gzip"), true);
   httpServer.send_P(200, "text/html", index_html_gz, index_html_gz_len);
 }
 
 void wifi()
 {
-  httpServer.sendHeader("Content-Encoding", "gzip", true);
+  httpServer.sendHeader(F("Content-Encoding"), F("gzip"), true);
   httpServer.send_P(200, "text/html", wifi_html_gz, wifi_html_gz_len);
 }
 
@@ -26,12 +26,11 @@ void wifi()
 void setTickers()
 {
   Serial.println(F("setTickers()..."));
-  Serial.print(F("args: "));
-  Serial.println(httpServer.args());
+  Serial.printf_P(PSTR("\targs: %s\n"), httpServer.args());
   
-  SHOW_BITCOIN = String("true").equals(httpServer.arg("bitcoin"));
-  SHOW_TBILLS = String("true").equals(httpServer.arg("tbills"));
-  SHOW_OIL = String("true").equals(httpServer.arg("oil"));
+  SHOW_BITCOIN = String(F("true")).equals(httpServer.arg(F("bitcoin")));
+  SHOW_TBILLS = String(F("true")).equals(httpServer.arg(F("tbills")));
+  SHOW_OIL = String(F("true")).equals(httpServer.arg(F("oil")));
 
   char tickers[TICKER_COUNT][MAX_STRING_LEN];
   
@@ -63,7 +62,7 @@ void setTickers()
   
   //force a refresh
   //2 second delay is a workaround for https://github.com/esp8266/Arduino/issues/2734
-  sinceAPIUpdate = MAX_API_INTERVAL - 2000;
+  sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL - 2000;
  
   Serial.println(F("setTickers()...done"));
 }
@@ -74,22 +73,21 @@ void getTickers()
 
   DynamicJsonDocument doc(1000);
   
-  doc["ip"] = WiFi.localIP().toString();
-  doc["hostname"] = String(hostName);
-  doc["macaddress"] = WiFi.macAddress();
-  doc["version"] = VERSION;
-  doc["bitcoin"] = SHOW_BITCOIN;
-  doc["tbills"] = SHOW_TBILLS;
-  doc["oil"] = SHOW_OIL;
+  doc[F("ip")] = WiFi.localIP().toString();
+  doc[F("hostname")] = String(hostName);
+  doc[F("macaddress")] = WiFi.macAddress();
+  doc[F("version")] = VERSION;
+  doc[F("bitcoin")] = SHOW_BITCOIN;
+  doc[F("tbills")] = SHOW_TBILLS;
+  doc[F("oil")] = SHOW_OIL;
 
   char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
   int num_tickers = readTickerFile(tickers);
   
-  JsonArray ticArr = doc.createNestedArray("tickers");
+  JsonArray ticArr = doc.createNestedArray(F("tickers"));
   for(int i = 0; i < TICKER_COUNT; i++)
   {
-    Serial.print(F("Ticker: "));
-    Serial.println(tickers[i]);
+    Serial.printf_P(PSTR("\tTicker: %s\n"), tickers[i]);
     ticArr.add(tickers[i]);
   }
 
@@ -104,8 +102,7 @@ void getTickers()
 void setWifi()
 {
   Serial.println(F("setWifi()..."));
-  Serial.print(F("num args: "));
-  Serial.println(httpServer.args());
+  Serial.printf_P(PSTR("\tnum args: %s\n"), httpServer.args());
   
   char wifis[MAX_WIFI_NETWORKS][2][96];
   int networks = readWifiInfo(wifis);
@@ -113,8 +110,7 @@ void setWifi()
   if(httpServer.hasArg(F("delete")))
   {
     int pos = atoi(httpServer.arg(F("delete")).c_str());
-    Serial.print(F("Deleting wifi pos: "));
-    Serial.println(pos);
+    Serial.printf_P(PSTR("\tDeleting wifi pos: %d"), pos);
       
     if(pos >= 0 && pos < MAX_WIFI_NETWORKS)
     {
@@ -161,7 +157,7 @@ void getWifi()
   JsonArray networks = root.createNestedArray("networks");
   for(int i = 0; i < MAX_WIFI_NETWORKS; i++)
   {
-    Serial.println(wifis[i][0]);  
+    Serial.printf_P(PSTR("\twifi: %s\n"), wifis[i][0]);  
     networks.add(wifis[i][0]);
   }
 
@@ -203,19 +199,16 @@ void queryPrices()
   {
     sprintf(requestBuffer, PRICING_CHART_URL, tickerBuf);
     
-    Serial.print(F("Pricing API GET URL: "));
-    Serial.println(requestBuffer);
+    Serial.printf_P(PSTR("\tPricing API GET URL: %s\n"), requestBuffer);
    
     if(!bufferToFile(IEX_HOST, requestBuffer, PRICING_FILE))
     {
-      sinceAPIUpdate = MAX_API_INTERVAL;
+      sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
     }
   }
   else
   {
-    String s  = F("No tickers defined.");
-    Serial.println(s);
-    printStatusMsg(s);
+    printStatusMsg(F("No tickers defined."));
   }
   
   Serial.println(F("queryPrices()...done")); 
@@ -233,24 +226,22 @@ void queryChartInfo()
 
   sprintf(requestBuffer, BASE_CHART_URL, tickers[0], CHART_INTERVAL);
 
-  Serial.print(F("API Chart GET URL: "));
-  Serial.println(requestBuffer);
+  Serial.printf_P(PSTR("\tAPI Chart GET URL: %s\n"), requestBuffer);
 
   if(!bufferToFile(IEX_HOST, requestBuffer, CHART_FILE))
   {
-    sinceAPIUpdate = MAX_API_INTERVAL;
+    sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
   }
 
   requestBuffer[0] = '\0';
 
   sprintf(requestBuffer, KEY_STATS_URL, tickers[0]);
 
-  Serial.print(F("API Key Stats Average GET URL: "));
-  Serial.println(requestBuffer);
+  Serial.printf_P(PSTR("\tAPI Key Stats Average GET URL: %s\n"), requestBuffer);
 
   if(!bufferToFile(IEX_HOST, requestBuffer, KEY_STATS_FILE))
   {
-    sinceAPIUpdate = MAX_API_INTERVAL;
+    sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
   }
   
   Serial.println(F("queryChartInfo()...done")); 
@@ -259,12 +250,11 @@ void queryChartInfo()
 void queryFed(const char* host, const char* url, const char *file_name)
 {  
   Serial.println(F("queryFed()..."));
-  printStatusMsg("Updating fed data.");
+  printStatusMsg(F("Updating fed data."));
   
   //String url = "https://fred.stlouisfed.org/graph/fredgraph.csv?mode=fred&id=DCOILWTICO&cosd=2014-05-20&fq=Daily"
 
-  Serial.print(F("Time GET URL: "));
-  Serial.println(TIME_URL);
+  Serial.printf_P(PSTR("\tTime GET URL: %s\n"), TIME_URL);
   
   WiFiClient client;
   if(getConnection(&client, TIME_HOST, HTTP_PORT, TIME_URL))
@@ -273,7 +263,7 @@ void queryFed(const char* host, const char* url, const char *file_name)
     DeserializationError err = deserializeJson(jsonDoc, client);
     if(!err)
     {
-      const char *dateTimeStr = jsonDoc["currentDateTime"];
+      const char *dateTimeStr = jsonDoc[F("currentDateTime")];
       
       int year;
       char dateStr [11];
@@ -287,21 +277,18 @@ void queryFed(const char* host, const char* url, const char *file_name)
       requestBuffer[0] = '\0';
       sprintf(requestBuffer, url, dateStr);
 
-      Serial.print(F("OIL GET URL: "));
-      Serial.println(requestBuffer);
+      Serial.printf_P(PSTR("\tOil GET URL: %s\n"), requestBuffer);
            
       if(!bufferToFile(host, requestBuffer,file_name))
       {
-        sinceAPIUpdate = MAX_API_INTERVAL;
+        sinceFedAPIUpdate = MAX_FED_API_INTERVAL;
       }
     }
     else
-    {
-      String s  = F("Time parse error. ");
-      Serial.print(s);
-      Serial.println(err.c_str());
-      printStatusMsg(s);
-      sinceAPIUpdate = MAX_API_INTERVAL;
+    {      
+      printStatusMsg(F("Time parse error. "));
+      Serial.printf_P(PSTR("\t%s\n"), err.c_str());
+      sinceFedAPIUpdate = MAX_FED_API_INTERVAL;
     }
   }
   
@@ -315,14 +302,12 @@ void queryCoinHistorical()
   
   //const char* COIN_HIST_URL = "https://api.coindesk.com/v1/bpi/historical/close.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
-  Serial.print(F("COIN Historical GET URL: "));
-  Serial.println(COIN_HIST_URL);
+  Serial.printf_P(PSTR("\tCOIN Historical GET URL: %s\n"), COIN_HIST_URL);
            
   if(!bufferToFile(COIN_HOST, COIN_HIST_URL, COIN_HIST_FILE))
   {
-    String s  = F("BT hist error.");
-    Serial.println(s);
-    sinceAPIUpdate = MAX_API_INTERVAL;
+    Serial.print(F("\tBT hist error."));
+    sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
   }
   
   Serial.println(F("queryCoinHistorical()...done"));
@@ -335,8 +320,7 @@ void queryCoinCurrent()
   
   //const char* COIN_CURR_URL = "https://api.coindesk.com/v1/bpi/currentprice/USD.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
-  Serial.print(F("BitCoin GET URL: "));
-  Serial.println(COIN_CURR_URL);
+  Serial.printf_P(PSTR("\tBitCoin GET URL: %s\n"), COIN_CURR_URL);
   
   WiFiClientSecure client;
   //FIX suggested by https://github.com/esp8266/Arduino/issues/4826#issuecomment-491813938 that worked. Seems like a bug to me.
@@ -348,11 +332,11 @@ void queryCoinCurrent()
     
     if(!err)
     {
-      JsonObject time = root["time"];
-      parseDate(coindate, time["updatedISO"]);
+      JsonObject time = root[F("time")];
+      parseDate(coindate, time[F("updatedISO")]);
       
-      JsonObject bpiUSD = root["bpi"]["USD"];
-      coinprice = bpiUSD["rate_float"];
+      JsonObject bpiUSD = root[F("bpi")][F("USD")];
+      coinprice = bpiUSD[F("rate_float")];
       
       //Serial.println(coindate);
       //Serial.println(coinprice);
@@ -360,9 +344,8 @@ void queryCoinCurrent()
     }
     else
     {
-      Serial.print(F("BT curr error: "));
-      Serial.println(err.c_str());
-      sinceAPIUpdate = MAX_API_INTERVAL;
+      Serial.printf_P(PSTR("\tBT curr error: %s\n"), err.c_str());
+      sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
     }
   }
   
@@ -377,8 +360,7 @@ void checkAvailableFirmwareVersion()
   strcat(requestBuffer, FW_VERSION_URL);
   strcat(requestBuffer, FW_GET_SUFFIX);
 
-  Serial.print(F("Firmware version GET URL: "));
-  Serial.println(requestBuffer);
+  Serial.printf_P(PSTR("\tFirmware version GET URL: %s\n"), requestBuffer);
   
   bufferToFile(FIRMWARE_HOST, requestBuffer, FW_REMOTE_VERSION_FILE);
   
@@ -446,8 +428,7 @@ bool getConnection(WiFiClient *client, const char *host, const int port, const c
     client->readBytesUntil('\r', status, sizeof(status));
     if (! (strcmp(status, "HTTP/1.0 200 OK") || (strcmp(status, "HTTP/1.1 200 OK"))))
     {
-      Serial.print(F("Unexpected response: "));
-      Serial.println(status);
+      Serial.printf_P(PSTR("\tUnexpected response: %s\n"), status);
       return false;
     }
 
@@ -461,10 +442,7 @@ bool getConnection(WiFiClient *client, const char *host, const int port, const c
   }
   else
   {
-    Serial.print(F("Remote host unreachable: "));
-    Serial.print(host);
-    Serial.print(':');
-    Serial.println(port);
+    Serial.printf_P(PSTR("\tRemote host unreachable: %s : %d\n"), host, port);
     printStatusMsg(F("Remote host unreachable."));
     ret = false;
   }

@@ -1,4 +1,4 @@
-#define VERSION 2.31
+#define VERSION 2.32
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
@@ -206,15 +206,6 @@ const char* FW_GET_SUFFIX = " HTTP/1.0\r\nHost: raw.githubusercontent.com\r\nUse
   const char* FW_BIN_URL = "http://espstockticker.s3-website-us-east-1.amazonaws.com/ESPStockTicker.ino.adafruit.bin";
 #endif
 
-//how often to get new data in ms
-const int MAX_API_INTERVAL = 60000;
-//how often to check for new firmware in ms
-const int MAX_FW_INTERVAL = 600000;
-//how often to switch display pages in ms
-const int MAX_PAGE_INTERVAL = 9500;
-//how long to remain in AP mode before rebooting
-const int MAX_AP_INTERVAL = 120000;
-
 const int MAX_STRINGS = 365;
 const int MAX_STRING_LEN = 11;
 
@@ -260,10 +251,26 @@ char coindate[MAX_DATE_LEN];
 char requestBuffer [GET_REQUEST_BUFFER_SIZE] = {""};
 //for serving configuration pages
 ESP8266WebServer httpServer(HTTP_PORT);
+
+//how often to get new data in ms
+const int MAX_STOCK_API_INTERVAL = 60000;
+const int MAX_FED_API_INTERVAL = 3600000;
+const int MAX_COIN_API_INTERVAL = 60000;
+
+//how often to check for new firmware in ms
+const int MAX_FW_INTERVAL = 600000;
+//how often to switch display pages in ms
+const int MAX_PAGE_INTERVAL = 9500;
+//how long to remain in AP mode before rebooting
+const int MAX_AP_INTERVAL = 120000;
+
 //keep track of when to switch pages
 elapsedMillis sincePrint;
 //keep track of when to refresh data
-elapsedMillis sinceAPIUpdate = MAX_API_INTERVAL;
+elapsedMillis sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
+elapsedMillis sinceFedAPIUpdate = MAX_FED_API_INTERVAL;
+elapsedMillis sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
+
 //keep track of when to check for updates
 elapsedMillis sinceFWUpdate = MAX_FW_INTERVAL;
 
