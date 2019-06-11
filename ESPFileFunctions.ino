@@ -20,16 +20,19 @@ int readWifiInfo(char wifis[][2][96])
   while(f.available() && wifiNo < MAX_WIFI_NETWORKS)
   {
     int size = f.readBytesUntil('\n', temp, 96);
-    if(size > 1)
+    temp[size] = '\0';
+    if (size > 1)
     {
+      //Serial.printf_P(PSTR("\ttemp: %s\n"), temp);
       char *ssid = strtok(temp, s);
       char *pass = strtok(NULL, s);
 
       if(ssid != NULL && pass != NULL)
       {
-        strncpy(wifis[wifiNo][0], ssid, 32);
-        strncpy(wifis[wifiNo][1], pass, 64);
-        Serial.printf_P(PSTR("\t%s : %s\n"), wifis[wifiNo][0], wifis[wifiNo][1]);
+        //Serial.printf_P(PSTR("\tbefore %s : %s\n"), ssid, pass);
+        strlcpy(wifis[wifiNo][0], ssid, 32);
+        strlcpy(wifis[wifiNo][1], pass, 64);
+        //Serial.printf_P(PSTR("\tafter  %s : %s\n"), wifis[wifiNo][0], wifis[wifiNo][1]);
         wifiNo++;
       }
     }
@@ -57,13 +60,15 @@ void writeWifiFile(char wifis[][2][96])
   {
     if(strlen(wifis[i][0]) && strlen(wifis[i][1]))
     {
-      //don't use println because it includes extra special characters
-      f.print(wifis[i][0]);
-      f.print('\t');
-      f.print(wifis[i][1]);
       Serial.printf_P(PSTR("\t%s : %s\n"), wifis[i][0], wifis[i][1]);
+      char temp[96] = "";
+      strcpy(temp, wifis[i][0]);
+      strcat(temp, "\t");
+      strcat(temp, wifis[i][1]);
+      strcat(temp, "\n");
+      //Serial.printf_P(PSTR("\ttemp: %s"), temp);
+      f.print(temp);
     }
-    f.print('\n');
   }
   
   f.close();
@@ -85,7 +90,7 @@ int readTickerFile(char tickers[][MAX_TICKER_SIZE])
     Serial.println(f.size());
     Serial.println(f.readString());
     f.close();
-  }
+    }
   */
 
   for(int i = 0; i < TICKER_COUNT; i++)
@@ -106,7 +111,7 @@ int readTickerFile(char tickers[][MAX_TICKER_SIZE])
     {
       //strip off the newline
       temp[size] = '\0';
-      strncpy(tickers[tickerNo], temp, MAX_TICKER_SIZE);
+      strlcpy(tickers[tickerNo], temp, MAX_TICKER_SIZE);
       //Serial.printf_P(PSTR("\tTicker: %s\n", tickers[tickerNo]));
       tickerNo++;
     }

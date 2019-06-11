@@ -26,7 +26,7 @@ void wifi()
 void setTickers()
 {
   Serial.println(F("setTickers()..."));
-  Serial.printf_P(PSTR("\targs: %s\n"), httpServer.args());
+  Serial.printf_P(PSTR("\targs: %d\n"), httpServer.args());
   
   SHOW_BITCOIN = String(F("true")).equals(httpServer.arg(F("bitcoin")));
   SHOW_TBILLS = String(F("true")).equals(httpServer.arg(F("tbills")));
@@ -46,7 +46,7 @@ void setTickers()
     if(httpServer.argName(i) == tickerName)
     {  
       tickers[ticker_count][0] = '\0';
-      strncpy(tickers[ticker_count], value.c_str(), MAX_TICKER_SIZE);
+      strlcpy(tickers[ticker_count], value.c_str(), MAX_TICKER_SIZE);
       ticker_count++;
     }
   }
@@ -102,7 +102,7 @@ void getTickers()
 void setWifi()
 {
   Serial.println(F("setWifi()..."));
-  Serial.printf_P(PSTR("\tnum args: %s\n"), httpServer.args());
+  Serial.printf_P(PSTR("\tnum args: %d\n"), httpServer.args());
   
   char wifis[MAX_WIFI_NETWORKS][2][96];
   int networks = readWifiInfo(wifis);
@@ -129,19 +129,19 @@ void setWifi()
     String pass = httpServer.arg(F("pass"));
     int pos = atoi(httpServer.arg(F("pos")).c_str());
     
-    Serial.print(F("Assigning new ssid for pos: "));
-    Serial.println(pos);
+    Serial.printf_P(PSTR("\tAssigning new ssid for pos: %d %s : %s\n"), pos, ssid.c_str(), pass.c_str());
     
     if(pos < MAX_WIFI_NETWORKS)
     {
-      strncpy(wifis[pos][0], ssid.c_str(), 32);
-      strncpy(wifis[pos][1], pass.c_str(), 64); 
+      strlcpy(wifis[pos][0], ssid.c_str(), 32);
+      strlcpy(wifis[pos][1], pass.c_str(), 64); 
+      Serial.printf_P(PSTR("\tAssigned new ssid for pos: %d %s : %s\n"), pos, wifis[pos][0], wifis[pos][1]);
     }
   }
 
   writeWifiFile(wifis);
-  httpServer.send(200, "text/html", "<html><head><script>window.location.replace(\"/wifi\");</script></head><body/></html>");
-  Serial.println("setWifi()...done");
+  httpServer.send_P(200, PSTR("text/html"), PSTR("<html><head><script>window.location.replace(\"/wifi\");</script></head><body/></html>"));
+  Serial.println(F("setWifi()...done"));
 }
 
 void getWifi()
@@ -157,8 +157,11 @@ void getWifi()
   JsonArray networks = root.createNestedArray("networks");
   for(int i = 0; i < MAX_WIFI_NETWORKS; i++)
   {
-    Serial.printf_P(PSTR("\twifi: %s\n"), wifis[i][0]);  
-    networks.add(wifis[i][0]);
+    if(strlen(wifis[i][0]))
+    {
+      Serial.printf_P(PSTR("\tgetWifi: %s : %s\n"), wifis[i][0], wifis[i][1]);  
+      networks.add(wifis[i][0]);
+    }
   }
 
   //check to see if websever implements Print

@@ -403,7 +403,7 @@ void parseDate(char target[], const char *toParse)
     
     char dateStr [6];
     snprintf(dateStr, 6, "%d/%d", month, day); 
-    strncpy(target, dateStr, 6);
+    strlcpy(target, dateStr, 6);
     target[6] = '\0';
   }
   else
