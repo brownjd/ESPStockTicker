@@ -202,7 +202,7 @@ void queryPrices()
   {
     sprintf(requestBuffer, PRICING_CHART_URL, tickerBuf);
     
-    Serial.printf_P(PSTR("\tPricing API GET URL: %s\n"), requestBuffer);
+    //Serial.printf_P(PSTR("\tPricing API GET URL: %s\n"), requestBuffer);
    
     if(!bufferToFile(IEX_HOST, requestBuffer, PRICING_FILE))
     {
@@ -229,7 +229,7 @@ void queryChartInfo()
 
   sprintf(requestBuffer, BASE_CHART_URL, tickers[0], CHART_INTERVAL);
 
-  Serial.printf_P(PSTR("\tAPI Chart GET URL: %s\n"), requestBuffer);
+  //Serial.printf_P(PSTR("\tAPI Chart GET URL: %s\n"), requestBuffer);
 
   if(!bufferToFile(IEX_HOST, requestBuffer, CHART_FILE))
   {
@@ -240,7 +240,7 @@ void queryChartInfo()
 
   sprintf(requestBuffer, KEY_STATS_URL, tickers[0]);
 
-  Serial.printf_P(PSTR("\tAPI Key Stats Average GET URL: %s\n"), requestBuffer);
+  //Serial.printf_P(PSTR("\tAPI Key Stats Average GET URL: %s\n"), requestBuffer);
 
   if(!bufferToFile(IEX_HOST, requestBuffer, KEY_STATS_FILE))
   {
@@ -257,7 +257,7 @@ void queryFed(const char* host, const char* url, const char *file_name)
   
   //String url = "https://fred.stlouisfed.org/graph/fredgraph.csv?mode=fred&id=DCOILWTICO&cosd=2014-05-20&fq=Daily"
 
-  Serial.printf_P(PSTR("\tTime GET URL: %s\n"), TIME_URL);
+  //Serial.printf_P(PSTR("\tTime GET URL: %s\n"), TIME_URL);
   
   WiFiClient client;
   if(getConnection(&client, TIME_HOST, HTTP_PORT, TIME_URL))
@@ -280,7 +280,7 @@ void queryFed(const char* host, const char* url, const char *file_name)
       requestBuffer[0] = '\0';
       sprintf(requestBuffer, url, dateStr);
 
-      Serial.printf_P(PSTR("\tOil GET URL: %s\n"), requestBuffer);
+      //Serial.printf_P(PSTR("\tOil GET URL: %s\n"), requestBuffer);
            
       if(!bufferToFile(host, requestBuffer,file_name))
       {
@@ -301,15 +301,15 @@ void queryFed(const char* host, const char* url, const char *file_name)
 void queryCoinHistorical()
 {  
   Serial.println(F("queryCoinHistorical()..."));
-  printStatusMsg("Updating bt historical data.");
+  printStatusMsg("Updating bitcoin hist data.");
   
   //const char* COIN_HIST_URL = "https://api.coindesk.com/v1/bpi/historical/close.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
-  Serial.printf_P(PSTR("\tCOIN Historical GET URL: %s\n"), COIN_HIST_URL);
+  //Serial.printf_P(PSTR("\tCOIN Historical GET URL: %s\n"), COIN_HIST_URL);
            
   if(!bufferToFile(COIN_HOST, COIN_HIST_URL, COIN_HIST_FILE))
   {
-    Serial.print(F("\tBT hist error."));
+    Serial.print(F("\tBC hist error."));
     sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
   }
   
@@ -323,7 +323,7 @@ void queryCoinCurrent()
   
   //const char* COIN_CURR_URL = "https://api.coindesk.com/v1/bpi/currentprice/USD.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
-  Serial.printf_P(PSTR("\tBitCoin GET URL: %s\n"), COIN_CURR_URL);
+  //Serial.printf_P(PSTR("\tBitCoin GET URL: %s\n"), COIN_CURR_URL);
   
   WiFiClientSecure client;
   //FIX suggested by https://github.com/esp8266/Arduino/issues/4826#issuecomment-491813938 that worked. Seems like a bug to me.
@@ -363,7 +363,7 @@ void checkAvailableFirmwareVersion()
   strcat(requestBuffer, FW_VERSION_URL);
   strcat(requestBuffer, FW_GET_SUFFIX);
 
-  Serial.printf_P(PSTR("\tFirmware version GET URL: %s\n"), requestBuffer);
+  //Serial.printf_P(PSTR("\tFirmware version GET URL: %s\n"), requestBuffer);
   
   bufferToFile(FIRMWARE_HOST, requestBuffer, FW_REMOTE_VERSION_FILE);
   

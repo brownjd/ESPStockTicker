@@ -41,11 +41,10 @@ void startSoftAP()
   {
     soft_AP_started = true;
     Serial.printf_P(PSTR("\tstartSoftAP(): Starting softAP: %s\n"), SOFT_AP_NAME);
-     
-    WiFi.softAP(SOFT_AP_NAME);
     
-    const char* softIP = WiFi.softAPIP().toString().c_str();
-    Serial.printf_P(PSTR("\tstartSoftAP(): Soft-AP IPAddress: %s\n"), softIP);
+    WiFi.softAP(SOFT_AP_NAME);
+    String softIP = WiFi.softAPIP().toString();
+    Serial.printf_P(PSTR("\tstartSoftAP(): Soft-AP IPAddress: %s\n"), softIP.c_str());
   
     char msg [170];
     printMsg(F("Wifi not connected yet."), true);
@@ -53,7 +52,7 @@ void startSoftAP()
     sprintf(msg, "to connect to '%s'", SOFT_AP_NAME);
     printMsg(msg);
     printMsg(F("WIFI network. Then open"));
-    sprintf(msg, "http://%s/wifi", softIP);
+    sprintf(msg, "http://%s/wifi", softIP.c_str());
     printMsg(msg);
     printMsg(F("to configure settings."));
   }

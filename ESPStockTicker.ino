@@ -13,8 +13,8 @@
 //serve static html from PROGMEM
 //so we don't need a separate data files dir
 //use node.js gulp to regenerate from html files in data dir
-#include "index.html.gz.h"
-#include "wifi.html.gz.h"
+#include "data/index.html.gz.h"
+#include "data/wifi.html.gz.h"
 #include "FS.h"
 
 void setup()
@@ -32,6 +32,8 @@ void setup()
   initScreen();
   yield();
   connectWifi();
+  yield();
+  startSoftAP();
   yield();
   setupWebServer();
   yield();
@@ -306,14 +308,14 @@ void updateFedInfo(const int max_data_points, const char* file_name)
         }
         else
         {
-          Serial.printf_P(PSTR("\tupdateFedInfo(): invalid data point %s\n"), temp);
+          Serial.printf_P(PSTR("\tupdateFedInfo(): invalid data point: %s\n"), temp);
         }
         
         //Serial.printf("\tupdateFedInfo() i: %d date: %s  price: %.1f\n", i, string_list[i], price_list[i][0]);
       }
       else
       {
-        Serial.printf_P(PSTR("\tupdateFedInfo(): data point %s\n"), temp);
+        Serial.printf_P(PSTR("\tupdateFedInfo(): invalid data point size: %s\n"), temp);
       }
     }
   }
@@ -356,20 +358,15 @@ void updateCoinInfo()
         const char* date = it->key().c_str();
         parseDate(string_list[i], date);
         price_list[i][0] = it->value().as<float>();
-        /*
-        sprintf(debugBuf, "coindates[%d]: %s coinprices[%d]: %.2f", i, coindates[i], i, coinprices[i]);
-        Serial.println(debugBuf); 
-        */ 
+        //Serial.printf("\tcoindates[%d]: %s coinprices[%d]: %.2f\n", i, string_list[i], i, price_list[i][0]);
+         
         i++;
       }
 
       //historical api only has yesterday's close, so tack on today's current price from current price api call
       price_list[i][0] = coinprice;
       strcpy(string_list[i], coindate);
-      /*
-      sprintf(debugBuf, "--coindates[%d]: %s coinprices[%d]: %.2f--", i, coindates[i], i, coinprices[i]);
-      Serial.println(debugBuf);
-      */  
+      //Serial.printf("\tcoindates[%d]: %s coinprices[%d]: %.2f\n", i, string_list[i], i, price_list[i][0]);
     }
     else
     {

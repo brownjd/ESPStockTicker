@@ -1,4 +1,4 @@
-#define VERSION 2.33
+#define VERSION 2.34
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
@@ -9,14 +9,46 @@
 
 #ifdef ARDUINO_ESP8266_NODEMCU
   #include "ST7735_REV.h"
-  #include "Monospaced_plain_11.h"
-  #define MONOSPACED_FONT Monospaced_plain_11
+  #define SCREEN_WIDTH ST7735_TFTHEIGHT_160
+  #define SCREEN_HEIGHT ST7735_TFTHEIGHT_128
+  
+  #include "fonts/Monospaced_plain_11.h"
+  #define MONOSPACED_FONT_11 Monospaced_plain_11
 
-  #define HISTORICAL_TITLE_FONT
+  #define TICKER_FONT &MONOSPACED_FONT_11
+  #define TICKER_FONT_SIZE 1
+
+  #define HISTORICAL_TITLE_FONT &MONOSPACED_FONT_11
+  #define HISTORICAL_TITLE_FONT_SIZE 1
+  #define HISTORICAL_LABEL_FONT
+  #define HISTORICAL_LABEL_FONT_SIZE 1
+  #define HISTORICAL_LABEL_VERTICAL_OFFSET_X_AXIS 6
+  #define HISTORICAL_LABEL_VERTICAL_OFFSET_Y_AXIS -3
   #define HISTORICAL_TITLE_POS_X 0
-  #define HISTORICAL_TITLE_POS_Y 5
-  #define FONT_SIZE 1
-  #define HISTORICAL_CHART_FONT_SIZE 1
+  #define HISTORICAL_TITLE_POS_Y 10
+  #define HISTORICAL_CHART_VERTICAL_OFFSET 15
+  #define HISTORICAL_CHART_Y_HEIGHT 80
+  
+  #define TICKER_CHART_TITLE_FONT &MONOSPACED_FONT_11
+  #define TICKER_CHART_TITLE_FONT_SIZE 1 
+  #define TICKER_CHART_LABEL_FONT
+  #define TICKER_CHART_LABEL_FONT_SIZE 1
+  #define TICKER_CHART_LABEL_VERTICAL_OFFSET_X_AXIS 5
+  #define TICKER_CHART_LABEL_VERTICAL_OFFSET_Y_AXIS -2
+  #define TICKER_CHART_LABEL_HORIZONTAL_OFFSET_X_AXIS -3
+
+  #define STATUS_FONT 
+  #define STATUS_FONT_SIZE 1
+  #define STATUS_MSG_HEIGHT 10
+  #define STATUS_MSG_VERTICAL_OFFSET 2
+  
+  #define MSG_LINE_SPACING 1.75
+
+  #define TICKER_ROW_HEIGHT 14
+  #define TICKER_TRIANGLE_BASE_ADJ -2
+  #define TICKER_TRIANGLE_TOP_ADJ -6
+  #define TICKER_TRIANGLE_WIDTH 4
+  
 
   //default triangle color - doubt we need it
   #define ST7735_GREY   0xB5F6
@@ -33,21 +65,18 @@
   #define TFT_YELLOW ST7735_DIMYELLOW
   #define TFT_GREY ST7735_GREY
 
+  //Bill "60:01:94:75:52:F0",
+
   //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
   //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
   const int YELLOW_TAB_SIZE = 2;
   const char YELLOW_TABS[YELLOW_TAB_SIZE][18] = { "60:01:94:74:4A:42", "68:C6:3A:9F:B6:61" };
 
-  const int ROTATION_SIZE = 1;
-  const char ROTATION_OVERRIDES[ROTATION_SIZE][18] = { "DC:4F:22:1C:2A:98" };
+  const int ROTATION_SIZE = 2;
+  const char ROTATION_OVERRIDES[ROTATION_SIZE][18] = { "DC:4F:22:1C:2A:98", "B4:E6:2D:69:D5:0D" };
 
-  //Screen Settings
-  const int SCREEN_WIDTH = 160;
-  const int SCREEN_HEIGHT = 128;
-  const int ROW_HEIGHT = 15;
-  const int STATUS_MSG_HEIGHT = 8;
   //calculate the number of rows we can fit in usable area
-  const int DISPLAY_ROWS = (SCREEN_HEIGHT - STATUS_MSG_HEIGHT) / ROW_HEIGHT;
+  const int DISPLAY_ROWS = (SCREEN_HEIGHT - STATUS_MSG_HEIGHT) / TICKER_ROW_HEIGHT;
   
   //screen is 160 x 128
   //column value is left hand side or start of column
@@ -72,20 +101,61 @@
   //vertical position of chart labels - hour
   const int CHART_Y_TICKER_POS = 118;
 
-  const int HISTORICAL_CHART_VERTICAL_OFFSET = 18;
+  const char* TBILL_LABEL = "10 Year";
+  const char* OIL_LABEL = "WTI";
+  const char* COIN_LABEL = "Bitcoin";
   
 #endif
 
 #ifdef ARDUINO_ESP8266_ESP12
   #include "Adafruit_ILI9341.h"
-  #include "Fonts/FreeSans12pt7b.h"
-  #define MONOSPACED_FONT FreeSans12pt7b
+  #define SCREEN_WIDTH ILI9341_TFTHEIGHT
+  #define SCREEN_HEIGHT ILI9341_TFTWIDTH
+  
+  #include "fonts/Monospaced_plain_12.h"
+  #define MONOSPACED_FONT_12 Monospaced_plain_12
 
-  #define HISTORICAL_TITLE_FONT &MONOSPACED_FONT
-  #define HISTORICAL_TITLE_POS_X 5
+  #include "fonts/Monospaced_plain_15.h"
+  #define MONOSPACED_FONT_15 Monospaced_plain_15
+  
+  #include "fonts/Monospaced_plain_18.h"
+  #define MONOSPACED_FONT_18 Monospaced_plain_18
+
+  #define TICKER_FONT &MONOSPACED_FONT_18
+  #define TICKER_FONT_SIZE 1
+
+  #define HISTORICAL_TITLE_FONT &MONOSPACED_FONT_18
+  #define HISTORICAL_TITLE_FONT_SIZE 1
+  #define HISTORICAL_LABEL_FONT &MONOSPACED_FONT_15
+  #define HISTORICAL_LABEL_FONT_SIZE 1
+  #define HISTORICAL_LABEL_VERTICAL_OFFSET_X_AXIS 20
+  #define HISTORICAL_LABEL_VERTICAL_OFFSET_Y_AXIS 8
+  #define HISTORICAL_TITLE_POS_X 0
   #define HISTORICAL_TITLE_POS_Y 20
-  #define FONT_SIZE 1
-  #define HISTORICAL_CHART_FONT_SIZE 1
+  #define HISTORICAL_CHART_VERTICAL_OFFSET 30
+  #define HISTORICAL_CHART_Y_HEIGHT 160
+  
+
+  #define TICKER_CHART_TITLE_FONT &MONOSPACED_FONT_18
+  #define TICKER_CHART_TITLE_FONT_SIZE 1 
+  #define TICKER_CHART_LABEL_FONT &MONOSPACED_FONT_15
+  #define TICKER_CHART_LABEL_FONT_SIZE 1
+  #define TICKER_CHART_LABEL_VERTICAL_OFFSET_X_AXIS 18
+  #define TICKER_CHART_LABEL_VERTICAL_OFFSET_Y_AXIS 9
+  #define TICKER_CHART_LABEL_HORIZONTAL_OFFSET_X_AXIS -5
+
+  #define STATUS_FONT &MONOSPACED_FONT_12
+  #define STATUS_FONT_SIZE 1
+  #define STATUS_MSG_HEIGHT 16
+  #define STATUS_MSG_VERTICAL_OFFSET 12
+  
+  #define MSG_LINE_SPACING 1.50
+
+  //Pricing screen Settings
+  #define TICKER_ROW_HEIGHT 27
+  #define TICKER_TRIANGLE_BASE_ADJ -2
+  #define TICKER_TRIANGLE_TOP_ADJ -10
+  #define TICKER_TRIANGLE_WIDTH 8
   
   #define TFT_CS   0
   #define TFT_DC   15
@@ -96,15 +166,8 @@
   #define TFT_YELLOW ILI9341_YELLOW
   #define TFT_GREY ILI9341_LIGHTGREY
 
-  
-  
-  //Pricing screen Settings
-  #define SCREEN_WIDTH ILI9341_TFTHEIGHT
-  #define SCREEN_HEIGHT ILI9341_TFTWIDTH
-  const int ROW_HEIGHT = 26;
-  const int STATUS_MSG_HEIGHT = 16;
   //calculate the number of rows we can fit in usable area
-  const int DISPLAY_ROWS = (SCREEN_HEIGHT - STATUS_MSG_HEIGHT) / ROW_HEIGHT;
+  const int DISPLAY_ROWS = (SCREEN_HEIGHT - STATUS_MSG_HEIGHT) / TICKER_ROW_HEIGHT;
   
   //screen is 320 x 256
   //column value is left hand side or start of column
@@ -116,9 +179,9 @@
 
   //Chart Settings
   //left side of chart in pixels
-  const int CHART_X_ORIGIN = 35;
+  const int CHART_X_ORIGIN = 55;
   //how many pixels between horizontal bars
-  const float CHART_X_SPACING = 43;//18.25;
+  const float CHART_X_SPACING = 40;
   //not 7.5, because of the leading 9:30 we draw separately
   const float CHART_X_WIDTH = CHART_X_SPACING * 6.5;
   //top border of chart - distance from origin
@@ -130,7 +193,9 @@
   //vertical position of chart labels - hour
   const int CHART_Y_TICKER_POS = 240;
 
-  const int HISTORICAL_CHART_VERTICAL_OFFSET = 30;
+  const char* TBILL_LABEL = "10 Year TBill";
+  const char* OIL_LABEL = "WTI";
+  const char* COIN_LABEL = "Bitcoin Price";
 #endif
 
 //SCL ->  SCK   ->  D5
@@ -163,8 +228,6 @@ const char* KEY_STATS_FILE = "keystats.json";
 const char* TBILL_HIST_FILE = "tbill.csv";
 const char* COIN_HIST_FILE = "coinhist.json";
 const char* OIL_HIST_FILE = "oilhist.csv";
-
-const float MSG_LINE_SPACING = 1.75;
 
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 
@@ -218,14 +281,11 @@ float price_list[MAX_STRINGS][2]; //can hold to a set of two floats
 const int MAX_TICKER_SIZE = 8;
 const int TICKER_COUNT = 16;
 
-const char* TBILL_LABEL = "10 Year TBill";
 const int MAX_TBILLS = 365;
 const int MAX_DATE_LEN = 11;
 
-const char* OIL_LABEL = "Oil Price";
 const int MAX_OIL_PRICES = 365;
 
-const char* COIN_LABEL = "Bitcoin Price";
 const int MAX_COINS = 32;
 
 //how many minutes between data points to request

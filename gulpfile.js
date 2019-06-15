@@ -38,7 +38,7 @@ const tap = require('gulp-tap');
 const log = require('fancy-log');
 
 const dataFolder = 'data/';
-const outputFolder = './';
+const outputFolder = 'data/';
  
 function hex (filename, data) {
   var outputfile = outputFolder + filename + '.h';
