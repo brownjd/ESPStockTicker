@@ -1,4 +1,4 @@
-#define VERSION 2.34
+#define VERSION 2.35
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
@@ -72,8 +72,10 @@
   const int YELLOW_TAB_SIZE = 2;
   const char YELLOW_TABS[YELLOW_TAB_SIZE][18] = { "60:01:94:74:4A:42", "68:C6:3A:9F:B6:61" };
 
-  const int ROTATION_SIZE = 2;
-  const char ROTATION_OVERRIDES[ROTATION_SIZE][18] = { "DC:4F:22:1C:2A:98", "B4:E6:2D:69:D5:0D" };
+  const int ROTATION_SIZE = 3;
+
+  //These are the bright ones. We can probably just make this the default
+  const char ROTATION_OVERRIDES[ROTATION_SIZE][18] = { "DC:4F:22:1C:2A:98", "B4:E6:2D:69:D5:0D", "BC:DD:C2:16:CA:4F" };
 
   //calculate the number of rows we can fit in usable area
   const int DISPLAY_ROWS = (SCREEN_HEIGHT - STATUS_MSG_HEIGHT) / TICKER_ROW_HEIGHT;
@@ -231,11 +233,11 @@ const char* OIL_HIST_FILE = "oilhist.csv";
 
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 
-const char* IEX_HOST = "api.iextrading.com";
-const char* PRICING_CHART_URL = "GET /1.0/stock/market/batch?filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=%s HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* IEX_HOST = "cloud.iexapis.com";
+const char* PRICING_CHART_URL = "GET /stable/stock/market/batch?token=pk_8990f87d67544a4b889cd03d8fe3b68c&filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=%s HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 //interval is number of minutes between prices
-const char* BASE_CHART_URL = "GET /1.0/stock/%s/chart/1d?chartInterval=%d&filter=average HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
-const char* KEY_STATS_URL = "GET /1.0/stock/%s/stats?filter=week52low,week52high,day200MovingAvg HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* BASE_CHART_URL = "GET /stable/stock/%s/chart/1d?token=pk_8990f87d67544a4b889cd03d8fe3b68c&chartInterval=%d&filter=average HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* KEY_STATS_URL = "GET /stable/stock/%s/stats?token=pk_8990f87d67544a4b889cd03d8fe3b68c&filter=week52low,week52high,day200MovingAvg HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
 const char* TIME_HOST = "worldclockapi.com";
 const char* TIME_URL = "GET /api/json/cst/now HTTP/1.0\r\nHost: worldclockapi.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
