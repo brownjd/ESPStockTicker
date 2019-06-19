@@ -135,7 +135,7 @@ void updatePrices()
   readTickerFile(tickers);
 
   //clear memory first
-  for(int tickerNum = 0; tickerNum < TICKER_COUNT; tickerNum++)
+  for(int tickerNum = 0; tickerNum < MAX_STRINGS; tickerNum++)
   {
     price_list[tickerNum][0] = 0.0;
     price_list[tickerNum][1] = 0.0;
@@ -186,7 +186,7 @@ void updateChartInfo()
   Serial.println(F("updateChartInfo()..."));
 
   //clear out memory
-  for(int i = 0; i < MAX_CHART_POINTS; i++)
+  for(int i = 0; i < MAX_STRINGS; i++)
   {
     price_list[i][0] = 0.0f;
   }
@@ -204,6 +204,7 @@ void updateChartInfo()
     yield();
     for(int i = 0; i < MAX_CHART_POINTS && f.available(); i++)
     {
+      //Serial.printf_P(PSTR("\ti: %d\n"), i);
       yield();
       
       DeserializationError err = deserializeJson(jsonDataPoint, f);
@@ -230,7 +231,13 @@ void updateChartInfo()
   if(parseError)
   {
     f.seek(0, SeekSet);
-    Serial.println(f.readString());
+    while(f.available())
+    {
+      Serial.print((char)f.read());
+      yield();
+    }
+    Serial.print('\n');
+    //Serial.println(f.readString());
     sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
   }
   
@@ -270,7 +277,7 @@ void updateFedInfo(const int max_data_points, const char* file_name)
   Serial.println(F("updateFedInfo()..."));
 
   //clear out memory
-  for(int i = 0; i < max_data_points; i++)
+  for(int i = 0; i < MAX_STRINGS; i++)
   {
     string_list[i][0] = '\0';
     price_list[i][0] = 0.0f;
@@ -333,7 +340,7 @@ void updateCoinInfo()
   Serial.println(F("updateCoinInfo()..."));
 
   //clear out memory
-  for(int i = 0; i < MAX_COINS; i++)
+  for(int i = 0; i < MAX_STRINGS; i++)
   {
     string_list[i][0] = '\0';
     price_list[i][0] = 0.0f; 
@@ -358,7 +365,7 @@ void updateCoinInfo()
         const char* date = it->key().c_str();
         parseDate(string_list[i], date);
         price_list[i][0] = it->value().as<float>();
-        //Serial.printf("\tcoindates[%d]: %s coinprices[%d]: %.2f\n", i, string_list[i], i, price_list[i][0]);
+        //Serial.printf("\string_list[%d]: %s price_list[%d]: %.2f\n", i, string_list[i], i, price_list[i][0]);
          
         i++;
       }
@@ -366,7 +373,7 @@ void updateCoinInfo()
       //historical api only has yesterday's close, so tack on today's current price from current price api call
       price_list[i][0] = coinprice;
       strcpy(string_list[i], coindate);
-      //Serial.printf("\tcoindates[%d]: %s coinprices[%d]: %.2f\n", i, string_list[i], i, price_list[i][0]);
+      //Serial.printf("\string_list[%d]: %s price_list[%d]: %.2f\n", i, string_list[i], i, price_list[i][0]);
     }
     else
     {

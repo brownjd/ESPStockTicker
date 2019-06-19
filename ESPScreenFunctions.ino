@@ -188,7 +188,7 @@ void displayNextPage()
     {
       updateCoinInfo();
       yield();
-      printHistoricalChart(MAX_COINS, COIN_LABEL);
+      printHistoricalChart(MAX_COINS+1, COIN_LABEL);
     }
     else sincePrint = MAX_PAGE_INTERVAL;
   }
@@ -205,6 +205,7 @@ void displayNextPage()
     //if it returns false, we printed an empty page, so flip to next;
     if(!printTickers()) 
       sincePrint = MAX_PAGE_INTERVAL;
+    printWifiInfo(false); 
   }
 
   //last page, loop
@@ -479,13 +480,8 @@ void printHistoricalChart(int max_data_points, const char *title)
     totalDataPoints++;
   }
 
-  //this is not the array size. since we use this nunmber a lot for scaling,
-  //just decrement it instead of subtracting one every time we use it.
-  totalDataPoints--;
+  //Serial.printf("\tTotal data points: %d\n", totalDataPoints);
   /*
-  Serial.print("Total data points: ");
-  Serial.println(totalDataPoints);
-  
   Serial.print("low: ");
   Serial.print(low);
   Serial.print(" high: ");
@@ -515,10 +511,10 @@ void printHistoricalChart(int max_data_points, const char *title)
   //max date
   //calculate the width of the string in pixels by drawing off screen and then subtract
   //from the right margin to place the text
-  tft.getTextBounds(string_list[totalDataPoints], SCREEN_WIDTH, SCREEN_HEIGHT, &x1, &y1, &w, &h);
+  tft.getTextBounds(string_list[totalDataPoints-1], SCREEN_WIDTH, SCREEN_HEIGHT, &x1, &y1, &w, &h);
   //Serial.printf("bounds x: %d, w: %d\n", x1, w);
   tft.setCursor(xMax - w, textPosY);
-  tft.print(string_list[totalDataPoints]);
+  tft.print(string_list[totalDataPoints-1]);
 
   printGraphLine(totalDataPoints, xMin, xMax, yMin, yMax, low, high, 0);
   
@@ -528,7 +524,7 @@ void printHistoricalChart(int max_data_points, const char *title)
   tft.setTextColor(TFT_GREEN);
 
   char str[30];
-  sprintf(str, "%s %s %.2f", title, string_list[totalDataPoints], price_list[totalDataPoints][0]);
+  sprintf(str, "%s %s %.2f", title, string_list[totalDataPoints-1], price_list[totalDataPoints-1][0]);
   tft.setCursor(HISTORICAL_TITLE_POS_X, HISTORICAL_TITLE_POS_Y);
   tft.print(str);
  
@@ -571,16 +567,16 @@ void printGraphLine(int totalDataPoints, const int xMin, const int xMax, const i
 {
   //grab first chart data point
   float price0 = price_list[0][0];
-  int x0 = mmap(0, 0, totalDataPoints, xMin, xMax);
+  int x0 = mmap(0, 0, totalDataPoints-1, xMin, xMax);
   float scaled0 = mmap(price0, low, high, yMax, yMin);
 
-  for(int i = 1; i <= totalDataPoints; i++)
+  for(int i = 1; i < totalDataPoints; i++)
   {
     yield();
 
     //we need two points to draw a line
     const float price1 = price_list[i][0];
-    const int x1 = mmap(i, 0, totalDataPoints, xMin, xMax);
+    const int x1 = mmap(i, 0, totalDataPoints-1, xMin, xMax);
     const float scaled1 = mmap(price1, low, high, yMax, yMin);
 
     if(price0 > 0)

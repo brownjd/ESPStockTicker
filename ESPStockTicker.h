@@ -1,4 +1,4 @@
-#define VERSION 2.35
+#define VERSION 2.36
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
@@ -226,18 +226,18 @@ const char* SOFT_AP_NAME = "ESPSoftAP";
 const char* TICKER_FILE = "/tickers.txt";
 const char* CHART_FILE = "/chart.json";
 const char* PRICING_FILE = "/prices.json";
-const char* KEY_STATS_FILE = "keystats.json";
-const char* TBILL_HIST_FILE = "tbill.csv";
-const char* COIN_HIST_FILE = "coinhist.json";
-const char* OIL_HIST_FILE = "oilhist.csv";
+const char* KEY_STATS_FILE = "/keystats.json";
+const char* TBILL_HIST_FILE = "/tbill.csv";
+const char* COIN_HIST_FILE = "/coinhist.json";
+const char* OIL_HIST_FILE = "/oilhist.csv";
 
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 
 const char* IEX_HOST = "cloud.iexapis.com";
-const char* PRICING_CHART_URL = "GET /stable/stock/market/batch?token=pk_8990f87d67544a4b889cd03d8fe3b68c&filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=%s HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* PRICING_CHART_URL = "GET /stable/stock/market/batch?token=pk_8990f87d67544a4b889cd03d8fe3b68c&filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=%s HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 //interval is number of minutes between prices
-const char* BASE_CHART_URL = "GET /stable/stock/%s/chart/1d?token=pk_8990f87d67544a4b889cd03d8fe3b68c&chartInterval=%d&filter=average HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
-const char* KEY_STATS_URL = "GET /stable/stock/%s/stats?token=pk_8990f87d67544a4b889cd03d8fe3b68c&filter=week52low,week52high,day200MovingAvg HTTP/1.0\r\nHost: api.iextrading.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* BASE_CHART_URL = "GET /stable/stock/%s/intraday-prices?token=pk_8990f87d67544a4b889cd03d8fe3b68c&filter=average&chartInterval=%d HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* KEY_STATS_URL = "GET /stable/stock/%s/stats?token=pk_8990f87d67544a4b889cd03d8fe3b68c&filter=week52low,week52high,day200MovingAvg HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
 const char* TIME_HOST = "worldclockapi.com";
 const char* TIME_URL = "GET /api/json/cst/now HTTP/1.0\r\nHost: worldclockapi.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
@@ -256,7 +256,7 @@ const char* TBILL_URL = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DGS10&fq=
 //also used to create API GET request
 const int GET_REQUEST_BUFFER_SIZE = 1000;
 //https client connection timeout for API calls
-const int CLIENT_TIMEOUT = 3000; //http read in ms
+const int CLIENT_TIMEOUT = 10000; //http read in ms
 
 //where to check for firmware version
 const char* FIRMWARE_HOST = "raw.githubusercontent.com";
@@ -291,7 +291,7 @@ const int MAX_OIL_PRICES = 365;
 const int MAX_COINS = 32;
 
 //how many minutes between data points to request
-const int CHART_INTERVAL = 2;
+const int CHART_INTERVAL = 5;
 //9:30 - 4 pm = 390 minutes / increment
 const int MAX_CHART_POINTS = 390 / CHART_INTERVAL;
 
@@ -315,7 +315,7 @@ char requestBuffer [GET_REQUEST_BUFFER_SIZE] = {""};
 ESP8266WebServer httpServer(HTTP_PORT);
 
 //how often to get new data in ms
-const int MAX_STOCK_API_INTERVAL = 60000;
+const int MAX_STOCK_API_INTERVAL = 300000;
 const int MAX_FED_API_INTERVAL = 3600000;
 const int MAX_COIN_API_INTERVAL = 60000;
 

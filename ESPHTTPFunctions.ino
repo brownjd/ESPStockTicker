@@ -6,6 +6,13 @@ void setupWebServer()
   httpServer.on(F("/settickers"), setTickers);
   httpServer.on(F("/setwifi"), setWifi);
   httpServer.on(F("/getwifi"), getWifi);
+  httpServer.serveStatic(TICKER_FILE, SPIFFS, TICKER_FILE, "max-age=0");
+  httpServer.serveStatic(CHART_FILE, SPIFFS, CHART_FILE, "max-age=0");
+  httpServer.serveStatic(PRICING_FILE, SPIFFS, PRICING_FILE, "max-age=0");
+  httpServer.serveStatic(KEY_STATS_FILE, SPIFFS, KEY_STATS_FILE, "max-age=0");
+  httpServer.serveStatic(TBILL_HIST_FILE, SPIFFS, TBILL_HIST_FILE, "max-age=0");
+  httpServer.serveStatic(COIN_HIST_FILE, SPIFFS, COIN_HIST_FILE, "max-age=0");
+  httpServer.serveStatic(OIL_HIST_FILE, SPIFFS, OIL_HIST_FILE, "max-age=0");
   httpServer.begin();
 }
 
@@ -391,12 +398,17 @@ bool bufferToFile(const char *host, const char *buf, const char* filename)
   WiFiClientSecure client;
   //FIX suggested by https://github.com/esp8266/Arduino/issues/4826#issuecomment-491813938 that worked. Seems like a bug to me.
   client.setInsecure();
+  client.setNoDelay(true);
   getConnection(&client, host, HTTPS_PORT, buf);
 
   bool ret = client.available() ? true: false;
-  
+
+  //FSInfo fs_info;
+  //SPIFFS.info(fs_info);
+  //Serial.printf("\tbefore totalBytes: %d usedBytes: %d\n", fs_info.totalBytes, fs_info.usedBytes);
   File f = SPIFFS.open(filename, "w");
   //Serial.println("#######################");
+  Serial.printf_P(PSTR("\tBytes avail: %d\n"), client.available());
   while(client.available())
   {
     yield();
@@ -407,6 +419,8 @@ bool bufferToFile(const char *host, const char *buf, const char* filename)
   }
   //Serial.println("#######################");
   f.close();
+  //SPIFFS.info(fs_info);
+  //Serial.printf("\tafter totalBytes: %d usedBytes: %d\n", fs_info.totalBytes, fs_info.usedBytes);
 
   //Serial.println(F("bufferToFile()...done"));
   return ret;
@@ -416,12 +430,12 @@ bool getConnection(WiFiClient *client, const char *host, const int port, const c
 { 
   //Serial.println(F("getConnection()..."));
   bool ret = true;
-  client->setTimeout(CLIENT_TIMEOUT);
   
   yield();
   if(client->connect(host, port))
   {
     yield();
+    client->setTimeout(CLIENT_TIMEOUT);
     //make the request
     client->print(buf);
 
