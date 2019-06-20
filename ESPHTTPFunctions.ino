@@ -13,6 +13,7 @@ void setupWebServer()
   httpServer.serveStatic(TBILL_HIST_FILE, SPIFFS, TBILL_HIST_FILE, "max-age=0");
   httpServer.serveStatic(COIN_HIST_FILE, SPIFFS, COIN_HIST_FILE, "max-age=0");
   httpServer.serveStatic(OIL_HIST_FILE, SPIFFS, OIL_HIST_FILE, "max-age=0");
+  httpServer.serveStatic(IEX_KEY_FILE, SPIFFS, IEX_KEY_FILE, "max-age=0");
   httpServer.begin();
 }
 
@@ -38,6 +39,10 @@ void setTickers()
   SHOW_BITCOIN = String(F("true")).equals(httpServer.arg(F("bitcoin")));
   SHOW_TBILLS = String(F("true")).equals(httpServer.arg(F("tbills")));
   SHOW_OIL = String(F("true")).equals(httpServer.arg(F("oil")));
+  String iexkeyStr = httpServer.arg(F("iexkey"));
+  char iexKey[IEX_KEY_LEN];
+  strlcpy(iexKey, iexkeyStr.c_str(), IEX_KEY_LEN);
+  writeIEXKeyFile(iexKey);
 
   char tickers[TICKER_COUNT][MAX_STRING_LEN];
   
@@ -87,6 +92,9 @@ void getTickers()
   doc[F("bitcoin")] = SHOW_BITCOIN;
   doc[F("tbills")] = SHOW_TBILLS;
   doc[F("oil")] = SHOW_OIL;
+  char iexKey[IEX_KEY_LEN] = {""};
+  readIEXKeyFile(iexKey);
+  doc[F("iexkey")] = iexKey;
 
   char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
   int num_tickers = readTickerFile(tickers);
@@ -186,8 +194,10 @@ void queryPrices()
 
   char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
   readTickerFile(tickers);
+  char iexKey[IEX_KEY_LEN] = {""};
+  readIEXKeyFile(iexKey);
   
-  //PRICING_CHART_URL = "/1.0/stock/market/batch?filter=symbol,latestPrice,changePercent&types=quote&displayPercent=true&symbols=";
+  //PRICING_LIST_URL = "/1.0/stock/market/batch?filter=symbol,latestPrice,changePercent&types=quote&displayPercent=true&symbols=";
   requestBuffer[0] = '\0';
 
   char tickerBuf[150] = {""}; 
@@ -207,7 +217,7 @@ void queryPrices()
   //we found at least one
   if (tickersFound)
   {
-    sprintf(requestBuffer, PRICING_CHART_URL, tickerBuf);
+    sprintf(requestBuffer, PRICING_LIST_URL, iexKey, tickerBuf );
     
     //Serial.printf_P(PSTR("\tPricing API GET URL: %s\n"), requestBuffer);
    
@@ -233,8 +243,10 @@ void queryChartInfo()
 
   char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
   readTickerFile(tickers);
+  char iexKey[IEX_KEY_LEN] = {""};
+  readIEXKeyFile(iexKey);
 
-  sprintf(requestBuffer, BASE_CHART_URL, tickers[0], CHART_INTERVAL);
+  sprintf(requestBuffer, BASE_CHART_URL, tickers[0], iexKey, CHART_INTERVAL);
 
   //Serial.printf_P(PSTR("\tAPI Chart GET URL: %s\n"), requestBuffer);
 
@@ -245,7 +257,7 @@ void queryChartInfo()
 
   requestBuffer[0] = '\0';
 
-  sprintf(requestBuffer, KEY_STATS_URL, tickers[0]);
+  sprintf(requestBuffer, KEY_STATS_URL, tickers[0], iexKey);
 
   //Serial.printf_P(PSTR("\tAPI Key Stats Average GET URL: %s\n"), requestBuffer);
 

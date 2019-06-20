@@ -1,4 +1,4 @@
-#define VERSION 2.36
+#define VERSION 2.37
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
@@ -223,6 +223,7 @@ const char* SOFT_AP_NAME = "ESPSoftAP";
 //stock ticker api and SSL fingerprint
 //const char* SSL_FINGERPRINT = "D1 34 42 D6 30 58 2F 09 A0 8C 48 B6 25 B4 6C 05 69 A4 2E 4E";
 
+const char* IEX_KEY_FILE = "/iexkey.txt";
 const char* TICKER_FILE = "/tickers.txt";
 const char* CHART_FILE = "/chart.json";
 const char* PRICING_FILE = "/prices.json";
@@ -234,10 +235,10 @@ const char* OIL_HIST_FILE = "/oilhist.csv";
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 
 const char* IEX_HOST = "cloud.iexapis.com";
-const char* PRICING_CHART_URL = "GET /stable/stock/market/batch?token=pk_8990f87d67544a4b889cd03d8fe3b68c&filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=%s HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* PRICING_LIST_URL = "GET /stable/stock/market/batch?token=%s&filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=%s HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 //interval is number of minutes between prices
-const char* BASE_CHART_URL = "GET /stable/stock/%s/intraday-prices?token=pk_8990f87d67544a4b889cd03d8fe3b68c&filter=average&chartInterval=%d HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
-const char* KEY_STATS_URL = "GET /stable/stock/%s/stats?token=pk_8990f87d67544a4b889cd03d8fe3b68c&filter=week52low,week52high,day200MovingAvg HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* BASE_CHART_URL = "GET /stable/stock/%s/intraday-prices?token=%s&filter=average&chartInterval=%d HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* KEY_STATS_URL = "GET /stable/stock/%s/stats?token=%s&filter=week52low,week52high,day200MovingAvg HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
 const char* TIME_HOST = "worldclockapi.com";
 const char* TIME_URL = "GET /api/json/cst/now HTTP/1.0\r\nHost: worldclockapi.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
@@ -271,6 +272,7 @@ const char* FW_GET_SUFFIX = " HTTP/1.0\r\nHost: raw.githubusercontent.com\r\nUse
   const char* FW_BIN_URL = "http://espstockticker.s3-website-us-east-1.amazonaws.com/ESPStockTicker.ino.adafruit.bin";
 #endif
 
+const int IEX_KEY_LEN = 36;
 const int MAX_STRINGS = 365;
 const int MAX_STRING_LEN = 11;
 

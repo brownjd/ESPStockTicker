@@ -143,6 +143,38 @@ void writeTickerFile(char tickers[][MAX_STRING_LEN])
   Serial.println(F("Writing ticker file...done"));
 }
 
+void readIEXKeyFile(char iexKey[])
+{
+  Serial.println(F("\tReading IEX Key File..."));
+  File f = SPIFFS.open(IEX_KEY_FILE, "r");
+  char temp[IEX_KEY_LEN] = {""};
+  if(f.available())
+  {
+    int size = f.readBytes(temp, IEX_KEY_LEN);
+    if(size > 1)
+    {
+      strlcpy(iexKey, temp, IEX_KEY_LEN);
+    }
+  }
+  Serial.printf_P(PSTR("\tKey: %s\n"), iexKey);
+  Serial.println(F("\tReading IEX Key File...done"));
+}
+
+void writeIEXKeyFile(char iexKey[])
+{
+  Serial.println(F("\Writing IEX Key File..."));
+  Serial.printf_P(PSTR("\tKey: %s\n"), iexKey);
+  File f = SPIFFS.open(IEX_KEY_FILE, "w");
+  
+  int size = f.print(iexKey);
+  if(size < IEX_KEY_LEN)
+  {
+    Serial.printf_P(PSTR("\tKey size error: %d\n"), size);
+  }
+  f.close();
+  Serial.println(F("\Writing IEX Key File...done"));
+}
+
 bool compareFWVersion()
 {
   Serial.println(F("compareFWVersion..."));

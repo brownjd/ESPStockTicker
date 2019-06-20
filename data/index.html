@@ -21,6 +21,7 @@
             document.getElementById("tbills").checked = root.tbills;
             document.getElementById("oil").checked = root.oil;
             document.getElementById("ip").innerHTML = root.ip;
+            document.getElementById("iexkey").value = root.iexkey;
             document.getElementById("version").innerHTML = root.version;
             document.getElementById("macaddress").innerHTML = root.macaddress;
             document.getElementById("hostname").innerHTML = "http://"+root.hostname+".local/";
@@ -54,7 +55,10 @@
       <h5>
         <input id="bitcoin" name="bitcoin" type="checkbox" value="true"> Show Bitcoin Price History <br> 
         <input id="tbills" name="tbills" type="checkbox" value="true"> Show 10 Year Treasury Bill History<br>
-        <input id="oil" name="oil" type="checkbox" value="true"> Show Oil Price History
+        <input id="oil" name="oil" type="checkbox" value="true"> Show Oil Price History<br>
+        <br>
+        IEX API Key (sign up at https://iexcloud.io/cloud-login)<br>
+        <input id="iexkey" name="iexkey" type="input" value="" length="36">
       </h5>
     </form>
     <h5>
