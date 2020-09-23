@@ -1,4 +1,4 @@
-#define VERSION 2.37
+#define VERSION 2.38
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
@@ -67,13 +67,15 @@
 
   //Bill "60:01:94:75:52:F0",
 
-  //list of mac addresses for ESPs soldered to screwed up Ebay screen that print backwards.
+  //list of mac addresses for ESPs soldered trotao screwed up Ebay screen that print backwards.
   //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
   const int YELLOW_TAB_SIZE = 2;
   const char YELLOW_TABS[YELLOW_TAB_SIZE][18] = { "60:01:94:74:4A:42", "68:C6:3A:9F:B6:61" };
 
-  const int ROTATION_SIZE = 3;
+  const int YELLOW_TAB_NON_REVERSED_SIZE = 1;
+  const char YELLOW_TABS_NON_REVERSED[YELLOW_TAB_NON_REVERSED_SIZE][18] = { "BC:DD:C2:16:CA:4F" };
 
+  const int ROTATION_SIZE = 3;
   //These are the bright ones. We can probably just make this the default
   const char ROTATION_OVERRIDES[ROTATION_SIZE][18] = { "DC:4F:22:1C:2A:98", "B4:E6:2D:69:D5:0D", "BC:DD:C2:16:CA:4F" };
 
@@ -240,8 +242,8 @@ const char* PRICING_LIST_URL = "GET /stable/stock/market/batch?token=%s&filter=l
 const char* BASE_CHART_URL = "GET /stable/stock/%s/intraday-prices?token=%s&filter=average&chartInterval=%d HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 const char* KEY_STATS_URL = "GET /stable/stock/%s/stats?token=%s&filter=week52low,week52high,day200MovingAvg HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
-const char* TIME_HOST = "worldclockapi.com";
-const char* TIME_URL = "GET /api/json/cst/now HTTP/1.0\r\nHost: worldclockapi.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* TIME_HOST = "worldtimeapi.org";
+const char* TIME_URL = "GET /api/timezone/America/Chicago HTTP/1.0\r\nHost: worldtimeapi.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
 //https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=bcb44e369321bfb3f&lastobs=180&from=&to=&filetype=csv&label=omit&layout=seriescolumn
 

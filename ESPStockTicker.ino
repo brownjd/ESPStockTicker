@@ -74,7 +74,7 @@ void loop()
 
       sinceStockAPIUpdate = 0;
     }
-
+    
     if(sinceFedAPIUpdate >= MAX_FED_API_INTERVAL)
     {
       if(SHOW_TBILLS)

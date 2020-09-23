@@ -281,11 +281,11 @@ void queryFed(const char* host, const char* url, const char *file_name)
   WiFiClient client;
   if(getConnection(&client, TIME_HOST, HTTP_PORT, TIME_URL))
   {
-    DynamicJsonDocument jsonDoc(400);
+    DynamicJsonDocument jsonDoc(600);
     DeserializationError err = deserializeJson(jsonDoc, client);
     if(!err)
     {
-      const char *dateTimeStr = jsonDoc[F("currentDateTime")];
+      const char *dateTimeStr = jsonDoc[F("datetime")];
       
       int year;
       char dateStr [11];
@@ -299,7 +299,7 @@ void queryFed(const char* host, const char* url, const char *file_name)
       requestBuffer[0] = '\0';
       sprintf(requestBuffer, url, dateStr);
 
-      //Serial.printf_P(PSTR("\tOil GET URL: %s\n"), requestBuffer);
+      //Serial.printf_P(PSTR("\t FED URL: %s\n"), requestBuffer);
            
       if(!bufferToFile(host, requestBuffer,file_name))
       {

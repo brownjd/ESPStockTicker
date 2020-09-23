@@ -1,6 +1,7 @@
 #include "Adafruit_ST7735.h"
 
 #define INITR_YELLOWTAB  0x8 //for the goofy backwards displays
+#define INITR_YELLOWTAB_NON_REVERSED  0x9 //for the goofy non-backwards displays
 
 class ST7735_REV : public Adafruit_ST7735 {
 
