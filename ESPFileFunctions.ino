@@ -23,16 +23,16 @@ int readWifiInfo(char wifis[][2][96])
     temp[size] = '\0';
     if (size > 1)
     {
-      //Serial.printf_P(PSTR("\ttemp: %s\n"), temp);
+      //Serial.printf_P(PSTR("%stemp: %s\n"), ERROR_MSG_INDENT, temp);
       char *ssid = strtok(temp, s);
       char *pass = strtok(NULL, s);
 
       if(ssid != NULL && pass != NULL)
       {
-        //Serial.printf_P(PSTR("\tbefore %s : %s\n"), ssid, pass);
+        //Serial.printf_P(PSTR("%sbefore %s : %s\n"), ERROR_MSG_INDENT, ssid, pass);
         strlcpy(wifis[wifiNo][0], ssid, 32);
         strlcpy(wifis[wifiNo][1], pass, 64);
-        //Serial.printf_P(PSTR("\tafter  %s : %s\n"), wifis[wifiNo][0], wifis[wifiNo][1]);
+        //Serial.printf_P(PSTR("%safter  %s : %s\n"), ERROR_MSG_INDENT, wifis[wifiNo][0], wifis[wifiNo][1]);
         wifiNo++;
       }
     }
@@ -66,7 +66,7 @@ void writeWifiFile(char wifis[][2][96])
       strcat(temp, "\t");
       strcat(temp, wifis[i][1]);
       strcat(temp, "\n");
-      //Serial.printf_P(PSTR("\ttemp: %s"), temp);
+      //Serial.printf_P(PSTR("%stemp: %s"), ERROR_MSG_INDENT, temp);
       f.print(temp);
     }
   }
@@ -112,7 +112,7 @@ int readTickerFile(char tickers[][MAX_TICKER_SIZE])
       //strip off the newline
       temp[size] = '\0';
       strlcpy(tickers[tickerNo], temp, MAX_TICKER_SIZE);
-      //Serial.printf_P(PSTR("\tTicker: %s\n", tickers[tickerNo]));
+      //Serial.printf_P(PSTR("%sTicker: %s\n", tickers[tickerNo]), ERROR_MSG_INDENT);
       tickerNo++;
     }
     

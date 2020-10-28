@@ -1,4 +1,4 @@
-#define VERSION 2.38
+#define VERSION 2.39
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
@@ -27,7 +27,7 @@
   #define HISTORICAL_TITLE_POS_X 0
   #define HISTORICAL_TITLE_POS_Y 10
   #define HISTORICAL_CHART_VERTICAL_OFFSET 15
-  #define HISTORICAL_CHART_Y_HEIGHT 80
+  //#define HISTORICAL_CHART_Y_HEIGHT 80
   
   #define TICKER_CHART_TITLE_FONT &MONOSPACED_FONT_11
   #define TICKER_CHART_TITLE_FONT_SIZE 1 
@@ -108,13 +108,27 @@
   const char* TBILL_LABEL = "10 Year";
   const char* OIL_LABEL = "WTI";
   const char* COIN_LABEL = "Bitcoin";
-  
 #endif
 
 #ifdef ARDUINO_ESP8266_ESP12
+  #include "Generic_SPI_TFT.h"
   #include "Adafruit_ILI9341.h"
-  #define SCREEN_WIDTH ILI9341_TFTHEIGHT
-  #define SCREEN_HEIGHT ILI9341_TFTWIDTH
+  #include "Adafruit_HX8357.h"
+
+  //these are set at runtime, once we figure out
+  //kind of screen is connected
+  int SCREEN_HEIGHT = 0;
+  int SCREEN_WIDTH = 0;
+  int DISPLAY_ROWS = 0;
+  int CHART_Y_ORIGIN = 0;
+  int CHART_Y_HEIGHT = 0;
+  int CHART_Y_SPACING = 0;
+  int CHART_Y_TICKER_POS = 0;
+  int COLUMN_2 = 0;    // ARROW - FXED
+  int COLUMN_3 = 0;     // % CHANGE - FIXED
+  int COLUMN_4 = 0;     // SYMBOL - SLIDES
+  float CHART_X_WIDTH = 0.0;
+  float CHART_X_SPACING = 0.0;
   
   #include "fonts/Monospaced_plain_12.h"
   #define MONOSPACED_FONT_12 Monospaced_plain_12
@@ -137,7 +151,6 @@
   #define HISTORICAL_TITLE_POS_X 0
   #define HISTORICAL_TITLE_POS_Y 20
   #define HISTORICAL_CHART_VERTICAL_OFFSET 30
-  #define HISTORICAL_CHART_Y_HEIGHT 160
   
 
   #define TICKER_CHART_TITLE_FONT &MONOSPACED_FONT_18
@@ -169,33 +182,16 @@
   #define TFT_RED ILI9341_RED
   #define TFT_YELLOW ILI9341_YELLOW
   #define TFT_GREY ILI9341_LIGHTGREY
-
-  //calculate the number of rows we can fit in usable area
-  const int DISPLAY_ROWS = (SCREEN_HEIGHT - STATUS_MSG_HEIGHT) / TICKER_ROW_HEIGHT;
   
   //screen is 320 x 256
   //column value is left hand side or start of column
   const int COLUMN_0 = 0;                     // SYMBOL - FIXED
   const int COLUMN_1 = 100;                   // PRICE - FIXED
-  const int COLUMN_2 = SCREEN_WIDTH - 120;    // ARROW - FXED
-  const int COLUMN_3 = SCREEN_WIDTH - 80;     // % CHANGE - FIXED
-  const int COLUMN_4 = SCREEN_WIDTH - 30;     // SYMBOL - SLIDES
+  //the rest are set at runtime
 
   //Chart Settings
   //left side of chart in pixels
   const int CHART_X_ORIGIN = 55;
-  //how many pixels between horizontal bars
-  const float CHART_X_SPACING = 40;
-  //not 7.5, because of the leading 9:30 we draw separately
-  const float CHART_X_WIDTH = CHART_X_SPACING * 6.5;
-  //top border of chart - distance from origin
-  const int CHART_Y_ORIGIN = 3;
-  //total height of chart
-  const int CHART_Y_HEIGHT = 200;
-  //how many pixels between vertical bars
-  const int CHART_Y_SPACING = 32;
-  //vertical position of chart labels - hour
-  const int CHART_Y_TICKER_POS = 240;
 
   const char* TBILL_LABEL = "10 Year TBill";
   const char* OIL_LABEL = "WTI";
@@ -344,3 +340,5 @@ ESP8266WiFiMulti wifiMulti;
 
 int page = 0;
 bool soft_AP_started = false;
+
+static const char ERROR_MSG_INDENT[] PROGMEM = "\t\t\t\t\t\t";

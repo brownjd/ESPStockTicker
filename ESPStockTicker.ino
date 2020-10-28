@@ -6,6 +6,7 @@
 #include <ESP8266httpUpdate.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
+#include <ArduinoOTA.h>
 #include <Adafruit_GFX.h>
 #include <elapsedMillis.h>
 
@@ -45,6 +46,8 @@ void loop()
   httpServer.handleClient();
   yield();
   startSoftAP();
+  yield();
+  ArduinoOTA.handle();
   yield();
   httpServer.handleClient();
   
@@ -113,8 +116,7 @@ void loop()
     
     if(sincePrint >= MAX_PAGE_INTERVAL)
     {
-      Serial.printf_P(PSTR("\tHeap Fragmentation: %d\n"), ESP.getHeapFragmentation());
-      Serial.printf_P(PSTR("\tHeap MaxFreeBlockSize: %d\n"),ESP.getMaxFreeBlockSize());
+      printFreeMem("");
       
       //page can change sincePrint, so need to do this at the outset
       sincePrint = 0;
@@ -168,7 +170,7 @@ void updatePrices()
     else
     {
       const char* s  = "Pricing data error.";
-      Serial.printf_P(PSTR("\t%s %s\n"), s, err.c_str());
+      Serial.printf_P(PSTR("%s%s %s\n"), ERROR_MSG_INDENT, s, err.c_str());
       printStatusMsg(s);
 
       f.seek(0, SeekSet);
@@ -181,10 +183,11 @@ void updatePrices()
   Serial.println(F("updatePrices()...done"));
 }
 
-void updateChartInfo()
+bool updateChartInfo()
 {
   Serial.println(F("updateChartInfo()..."));
-
+  bool ret = true;
+  
   //clear out memory
   for(int i = 0; i < MAX_STRINGS; i++)
   {
@@ -204,7 +207,7 @@ void updateChartInfo()
     yield();
     for(int i = 0; i < MAX_CHART_POINTS && f.available(); i++)
     {
-      //Serial.printf_P(PSTR("\ti: %d\n"), i);
+      //Serial.printf_P(PSTR("%si: %d\n"), ERROR_MSG_INDENT, i);
       yield();
       
       DeserializationError err = deserializeJson(jsonDataPoint, f);
@@ -217,7 +220,7 @@ void updateChartInfo()
       else
       {
         parseError = true;
-        Serial.printf_P(PSTR("\tInvalid data point i: %d %s\n"), i, err.c_str());
+        Serial.printf_P(PSTR("%sInvalid data point i: %d %s\n"), ERROR_MSG_INDENT, i, err.c_str());
       }
       yield();
       f.find(',');
@@ -225,6 +228,9 @@ void updateChartInfo()
   }
   else
   {
+    ret = false;
+    sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
+    Serial.printf_P(PSTR("%sChart data file size: %d\n"), ERROR_MSG_INDENT, f.size());
     printStatusMsg(F("Chart data empty."));
   }
 
@@ -238,6 +244,7 @@ void updateChartInfo()
     }
     Serial.print('\n');
     //Serial.println(f.readString());
+    ret = false;
     sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
   }
   
@@ -256,26 +263,30 @@ void updateChartInfo()
     }
     else
     {
-      Serial.printf_P(PSTR("\tKey stats error: %s\n"), err.c_str());
+      Serial.printf_P(PSTR("%sKey stats error: %s\n"), ERROR_MSG_INDENT, err.c_str());
       f.seek(0, SeekSet);
       Serial.println(f.readString());
       sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
+      ret = false;
     }
   }
   else
   {
+    Serial.printf_P(PSTR("%sKey stats file size: %d\n"), ERROR_MSG_INDENT, f.size());
     printStatusMsg(F("Key stats empty."));
+    ret = false;
   }
   
   f.close();
-      
   Serial.println(F("updateChartInfo()...done"));
+  return ret;
 }
 
-void updateFedInfo(const int max_data_points, const char* file_name)
+bool updateFedInfo(const int max_data_points, const char* file_name)
 {
   Serial.println(F("updateFedInfo()..."));
-
+  bool ret = true;
+  
   //clear out memory
   for(int i = 0; i < MAX_STRINGS; i++)
   {
@@ -302,43 +313,56 @@ void updateFedInfo(const int max_data_points, const char* file_name)
       yield();
       int size = f.readBytesUntil('\n', temp, 20);
       temp[size] = '\0';
-      //Serial.printf("\tupdateFedInfo() i: %d size: %d temp: %s\n", i, size, temp);
+      //Serial.printf("%supdateFedInfo() i: %d size: %d temp: %s\n", ERROR_MSG_INDENT, i, size, temp);
       if(size > 10)
       {
         const char *date = strtok(temp, tok);
         const char *price = strtok(NULL, tok);
  
-        parseDate(string_list[i], date);
-        if(price != NULL)
+        if(parseDate(string_list[i], date))
         {
-          price_list[i][0] = atof(price);
+          if(price != NULL)
+          {
+            price_list[i][0] = atof(price);
+          }
+          else
+          {
+            Serial.printf_P(PSTR("%supdateFedInfo(): invalid data point: %s\n"), ERROR_MSG_INDENT, temp);
+            ret = false;
+          }
         }
         else
         {
-          Serial.printf_P(PSTR("\tupdateFedInfo(): invalid data point: %s\n"), temp);
+           Serial.printf_P(PSTR("%supdateFedInfo(): unable to parse date: %s"), ERROR_MSG_INDENT, date);
+           ret = false;
         }
         
-        //Serial.printf("\tupdateFedInfo() i: %d date: %s  price: %.1f\n", i, string_list[i], price_list[i][0]);
+        //Serial.printf("%supdateFedInfo() i: %d date: %s  price: %.1f\n", ERROR_MSG_INDENT, i, string_list[i], price_list[i][0]);
       }
       else
       {
-        Serial.printf_P(PSTR("\tupdateFedInfo(): invalid data point size: %s\n"), temp);
+        Serial.printf_P(PSTR("%supdateFedInfo(): invalid data point size: %s\n"), ERROR_MSG_INDENT, temp);
+        ret = false;
       }
     }
   }
   else
   {
-    printStatusMsg(F("Fed data empty."));
+    Serial.printf_P(PSTR("%sFed data file size: %d\n"), ERROR_MSG_INDENT, f.size());
+    printStatusMsg(F("Error: Fed data file."));
+    ret = false;
   }
 
   f.close();      
   Serial.println(F("updateFedInfo()...done"));
+  return ret;
 }
 
-void updateCoinInfo()
+bool updateCoinInfo()
 {
   Serial.println(F("updateCoinInfo()..."));
-
+  bool ret = true;
+  
   //clear out memory
   for(int i = 0; i < MAX_STRINGS; i++)
   {
@@ -363,8 +387,14 @@ void updateCoinInfo()
       {
         yield();
         const char* date = it->key().c_str();
-        parseDate(string_list[i], date);
-        price_list[i][0] = it->value().as<float>();
+        if(parseDate(string_list[i], date))
+        {
+          price_list[i][0] = it->value().as<float>();
+        }
+        else
+        {
+          Serial.printf_P(PSTR("%sUpdate coin info date parse error.\n"), ERROR_MSG_INDENT);
+        }
         //Serial.printf("\string_list[%d]: %s price_list[%d]: %.2f\n", i, string_list[i], i, price_list[i][0]);
          
         i++;
@@ -377,22 +407,25 @@ void updateCoinInfo()
     }
     else
     {
+      sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
+      ret = false;
       const char* s  = "coin data error. ";
-      Serial.printf_P(PSTR("\t%s %s\n"), s, err.c_str());
+      Serial.printf_P(PSTR("%s%s %s\n"), ERROR_MSG_INDENT, s, err.c_str());
       printStatusMsg(s);
       f.seek(0, SeekSet);
       Serial.println(f.readString());
-      sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
     }
   }
   
   f.close();
   
   Serial.println(F("updateCoinInfo()...done"));
+  return ret;
 }
 
-void parseDate(char target[], const char *toParse)
+bool parseDate(char target[], const char *toParse)
 {
+  bool ret = true;
   //Serial.print("parseDate ");
   int year;
   int month;
@@ -403,7 +436,7 @@ void parseDate(char target[], const char *toParse)
   if(size >= 10)
   {
     sscanf(toParse, "%d-%d-%d", &year, &month, &day);
-    //Serial.printf("\tmonth: %d day: %d ", month, day);
+    //Serial.printf("%smonth: %d day: %d ", ERROR_MSG_INDENT, month, day);
     
     char dateStr [6];
     snprintf(dateStr, 6, "%d/%d", month, day); 
@@ -412,14 +445,16 @@ void parseDate(char target[], const char *toParse)
   }
   else
   {
-    Serial.printf_P(PSTR("\tparseDate: unable to parse: %s\n"), toParse);
+    Serial.printf_P(PSTR("%sparseDate: unable to parse: %s\n"), ERROR_MSG_INDENT, toParse);
+    return false;
   }
   //Serial.println("...done");
+  return ret;
 }
 
 void printFreeMem(char *str)
 {
-  char msg[50];
-  sprintf(msg, "%s() Free heap: %d", str, ESP.getFreeHeap());
-  Serial.println(msg);
+  Serial.printf_P(PSTR("%s%sFree heap: %d\n"), ERROR_MSG_INDENT, str, ESP.getFreeHeap());
+  Serial.printf_P(PSTR("%s%sHeap Fragmentation: %d\n"), ERROR_MSG_INDENT, str, ESP.getHeapFragmentation());
+  Serial.printf_P(PSTR("%s%sHeap MaxFreeBlockSize: %d\n"), ERROR_MSG_INDENT, str, ESP.getMaxFreeBlockSize());
 }

@@ -187,9 +187,10 @@ void getWifi()
   Serial.println(F("getWifi()...done"));
 }
 
-void queryPrices()
+bool queryPrices()
 {
   Serial.println(F("queryPrices()..."));
+  bool ret = true;
   printStatusMsg("Updating prices.");
 
   char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
@@ -224,19 +225,23 @@ void queryPrices()
     if(!bufferToFile(IEX_HOST, requestBuffer, PRICING_FILE))
     {
       sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
+      ret = false;
     }
   }
   else
   {
     printStatusMsg(F("No tickers defined."));
+    ret = false;
   }
   
   Serial.println(F("queryPrices()...done")); 
+  return ret;
 }
 
-void queryChartInfo()
+bool queryChartInfo()
 {
   Serial.println(F("queryChartInfo()..."));
+  bool ret = true;
   printStatusMsg("Updating chart data.");
   //String url = F("GET /1.0/stock/%s/chart/1d?chartInterval=%d&filter=minute,average");
   requestBuffer[0] = '\0';
@@ -253,6 +258,7 @@ void queryChartInfo()
   if(!bufferToFile(IEX_HOST, requestBuffer, CHART_FILE))
   {
     sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
+    ret = false;
   }
 
   requestBuffer[0] = '\0';
@@ -264,14 +270,17 @@ void queryChartInfo()
   if(!bufferToFile(IEX_HOST, requestBuffer, KEY_STATS_FILE))
   {
     sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
+    ret = false;
   }
   
-  Serial.println(F("queryChartInfo()...done")); 
+  Serial.println(F("queryChartInfo()...done"));
+  return ret; 
 }
 
-void queryFed(const char* host, const char* url, const char *file_name)
+bool queryFed(const char* host, const char* url, const char *file_name)
 {  
   Serial.println(F("queryFed()..."));
+  bool ret = true;
   printStatusMsg(F("Updating fed data."));
   
   //String url = "https://fred.stlouisfed.org/graph/fredgraph.csv?mode=fred&id=DCOILWTICO&cosd=2014-05-20&fq=Daily"
@@ -304,22 +313,31 @@ void queryFed(const char* host, const char* url, const char *file_name)
       if(!bufferToFile(host, requestBuffer,file_name))
       {
         sinceFedAPIUpdate = MAX_FED_API_INTERVAL;
+        ret = false;
       }
     }
     else
     {      
       printStatusMsg(F("Time parse error. "));
-      Serial.printf_P(PSTR("\t%s\n"), err.c_str());
+      Serial.printf_P(PSTR("%s%s\n"), ERROR_MSG_INDENT, err.c_str());
       sinceFedAPIUpdate = MAX_FED_API_INTERVAL;
+      ret = false;
     }
+  }
+  else
+  {
+    sinceFedAPIUpdate = MAX_FED_API_INTERVAL;
+    ret = false;
   }
   
   Serial.println(F("queryFed()...done"));
+  return ret;
 }
 
-void queryCoinHistorical()
+bool queryCoinHistorical()
 {  
   Serial.println(F("queryCoinHistorical()..."));
+  bool ret = true;
   printStatusMsg("Updating bitcoin hist data.");
   
   //const char* COIN_HIST_URL = "https://api.coindesk.com/v1/bpi/historical/close.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
@@ -328,16 +346,19 @@ void queryCoinHistorical()
            
   if(!bufferToFile(COIN_HOST, COIN_HIST_URL, COIN_HIST_FILE))
   {
-    Serial.print(F("\tBC hist error."));
+    Serial.printf_P(PSTR("%sBitCoin hist error in bufferToFile."), ERROR_MSG_INDENT);
     sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
+    ret = false;
   }
   
   Serial.println(F("queryCoinHistorical()...done"));
+  return ret;
 }
 
-void queryCoinCurrent()
+bool queryCoinCurrent()
 {  
   Serial.println(F("queryCoinCurrent()..."));
+  bool ret = true;
   printStatusMsg("Updating bitcoin data.");
   
   //const char* COIN_CURR_URL = "https://api.coindesk.com/v1/bpi/currentprice/USD.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
@@ -355,23 +376,36 @@ void queryCoinCurrent()
     if(!err)
     {
       JsonObject time = root[F("time")];
-      parseDate(coindate, time[F("updatedISO")]);
+      if(parseDate(coindate, time[F("updatedISO")]))
+      {      
+        JsonObject bpiUSD = root[F("bpi")][F("USD")];
+        coinprice = bpiUSD[F("rate_float")];
       
-      JsonObject bpiUSD = root[F("bpi")][F("USD")];
-      coinprice = bpiUSD[F("rate_float")];
-      
-      //Serial.println(coindate);
-      //Serial.println(coinprice);
-      
+        //Serial.println(coindate);
+        //Serial.println(coinprice);
+      }
+      else
+      {
+        Serial.printf_P(PSTR("%squeryCoinCurrent() time parse error.\n"), ERROR_MSG_INDENT);
+        sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
+        ret = false;
+      }
     }
     else
     {
-      Serial.printf_P(PSTR("\tBT curr error: %s\n"), err.c_str());
+      Serial.printf_P(PSTR("%squeryCoinCurrent() error: %s\n"), ERROR_MSG_INDENT, err.c_str());
       sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
+      ret = false;
     }
+  }
+  else
+  {
+    sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
+    ret = false;
   }
   
   Serial.println(F("queryCoinCurrent()...done"));
+  return ret;
 }
 
 void checkAvailableFirmwareVersion()
@@ -405,7 +439,7 @@ void updateFirmware()
 
 bool bufferToFile(const char *host, const char *buf, const char* filename)
 {
-  //Serial.println(F("bufferToFile()..."));
+  Serial.println(F("bufferToFile()..."));
   
   WiFiClientSecure client;
   //FIX suggested by https://github.com/esp8266/Arduino/issues/4826#issuecomment-491813938 that worked. Seems like a bug to me.
@@ -434,13 +468,13 @@ bool bufferToFile(const char *host, const char *buf, const char* filename)
   //SPIFFS.info(fs_info);
   //Serial.printf("\tafter totalBytes: %d usedBytes: %d\n", fs_info.totalBytes, fs_info.usedBytes);
 
-  //Serial.println(F("bufferToFile()...done"));
+  Serial.println(F("bufferToFile()...done"));
   return ret;
 }
 
 bool getConnection(WiFiClient *client, const char *host, const int port, const char *buf)
 { 
-  //Serial.println(F("getConnection()..."));
+  Serial.println(F("getConnection()..."));
   bool ret = true;
   
   yield();
@@ -457,7 +491,7 @@ bool getConnection(WiFiClient *client, const char *host, const int port, const c
     client->readBytesUntil('\r', status, sizeof(status));
     if (! (strcmp(status, "HTTP/1.0 200 OK") || (strcmp(status, "HTTP/1.1 200 OK"))))
     {
-      Serial.printf_P(PSTR("\tUnexpected response: %s\n"), status);
+      Serial.printf_P(PSTR("%sUnexpected response: %s\n"), ERROR_MSG_INDENT, status);
       return false;
     }
 
@@ -465,17 +499,17 @@ bool getConnection(WiFiClient *client, const char *host, const int port, const c
     char endOfHeaders[] = "\r\n\r\n";
     if (!client->find(endOfHeaders)) 
     {
-      Serial.println(F("Invalid response"));
+      Serial.printf_P(PSTR("%sInvalid response"), ERROR_MSG_INDENT);
       return false;
     }
   }
   else
   {
-    Serial.printf_P(PSTR("\tRemote host unreachable: %s : %d\n"), host, port);
+    Serial.printf_P(PSTR("%sRemote host unreachable: %s : %d\n"), ERROR_MSG_INDENT, host, port);
     printStatusMsg(F("Remote host unreachable."));
     ret = false;
   }
   
-  //Serial.println(F("getConnection()...done"));
+  Serial.println(F("getConnection()...done"));
   return ret;
 }
