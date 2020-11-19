@@ -1,16 +1,13 @@
- 
-#ifdef ARDUINO_ESP8266_NODEMCU
-  ST7735_REV tft = ST7735_REV(TFT_CS, TFT_DC, TFT_RST);
-#endif
-#ifdef ARDUINO_ESP8266_ESP12
 
-  Adafruit_SPITFT *tft = NULL;
-  
-  
+#ifdef ARDUINO_ESP8266_ESP12
+Adafruit_SPITFT *tft = NULL;
+#endif
+#ifdef ARDUINO_ESP8266_NODEMCU
+ST7735_REV *tft = new ST7735_REV(TFT_CS, TFT_DC, TFT_RST);
 #endif
 
 int yPos = 0;
-
+ 
 void initScreen()
 {
   
@@ -67,6 +64,9 @@ void initScreen()
 #endif
 
 #ifdef ARDUINO_ESP8266_NODEMCU
+
+  tft = new ST7735_REV(TFT_CS, TFT_DC, TFT_RST);
+
   //i should check for a tell-tale register value, but checking for the mac id of the
   //esp it is soldered to will have to suffice.
   Serial.println(WiFi.macAddress());
