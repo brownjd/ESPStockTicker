@@ -52,6 +52,7 @@ void initScreen()
   //vertical position of chart labels - hour
   CHART_Y_TICKER_POS = CHART_Y_HEIGHT - 40;
 
+  COLUMN_1_5 = SCREEN_WIDTH - 310;  // COMPANY NAME
   COLUMN_2 = SCREEN_WIDTH - 120;    // ARROW - FXED
   COLUMN_3 = SCREEN_WIDTH - 80;     // % CHANGE - FIXED
   COLUMN_4 = SCREEN_WIDTH - 30;     // SYMBOL - SLIDES
@@ -201,12 +202,14 @@ void displayNextPage()
     updatePrices();
   }
 
-  else if(page == 1)
+  else if(page < 3)
   {
     //no need to do anything
+    //this gets handled later
   }
-  
-  else if(page == 2)
+
+  //ticker[0] chart
+  else if(page == 3)
   {
     page++;
     if(updateChartInfo())
@@ -222,7 +225,7 @@ void displayNextPage()
   }
 
   //tbill page
-  else if(page == 3)
+  else if(page == 4)
   {
     page++;
     if(SHOW_TBILLS)
@@ -240,7 +243,7 @@ void displayNextPage()
   }
   
   //oil page
-  else if(page == 4)
+  else if(page == 5)
   {
     page++;
     if(SHOW_OIL)
@@ -258,7 +261,7 @@ void displayNextPage()
   }
 
   //coin page
-  else if(page == 5)
+  else if(page == 6)
   {
     page++;
 
@@ -281,7 +284,7 @@ void displayNextPage()
 
   //this is handled differently because tickers can span
   //more than one page.
-  if(page < 2)
+  if(page < 3)
   {
     //clear off any cruft
     tft->fillScreen(TFT_BLACK);
@@ -387,6 +390,11 @@ bool printTicker(char tickers[][MAX_TICKER_SIZE], int tickerNum)
 
       tft->setCursor(COLUMN_1, fontYPos);
       tft->print(price);
+
+      #ifdef ARDUINO_ESP8266_ESP12
+      tft->setCursor(COLUMN_1_5, fontYPos);
+      tft->print(ticker_name_list[tickerNum]);
+      #endif
 
       tft->fillTriangle(COLUMN_2, triangleBase, COLUMN_2+TICKER_TRIANGLE_WIDTH, triangleTop, COLUMN_2+(TICKER_TRIANGLE_WIDTH*2), triangleBase, triangleColor);
 

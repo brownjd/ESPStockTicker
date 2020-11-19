@@ -277,6 +277,40 @@ bool queryChartInfo()
   return ret; 
 }
 
+bool displayQuery()
+{
+  Serial.println(F("displayQuery()..."));
+  bool ret = true;
+  printStatusMsg(F("Getting time."));
+  WiFiClient client;
+  if(getConnection(&client, TIME_HOST, HTTP_PORT, TIME_URL))
+  {
+    DynamicJsonDocument jsonDoc(600);
+    DeserializationError err = deserializeJson(jsonDoc, client);
+    if(!err)
+    {
+      //"datetime":"2020-10-28T14:16:41.499812-05:00"
+      const char *dateTimeStr = jsonDoc[F("datetime")];
+      Serial.printf("datetime: %s\n", dateTimeStr);
+      
+      int hour = 0;
+      sscanf(dateTimeStr, "%*d-%*d-%*dT%d:%*d:%*d", &hour);
+      Serial.printf("Hour is: %d\n", hour);
+      
+      ret = (hour > 8 && hour < 20);
+    }
+    else
+    {      
+      printStatusMsg(F("Time parse error. "));
+      Serial.printf_P(PSTR("%s%s\n"), ERROR_MSG_INDENT, err.c_str());
+      sinceTimeUpdate = MAX_TIME_INTERVAL;
+      ret = true;
+    }
+  }
+  Serial.println(F("displayQuery()...done"));
+  return ret;
+}
+
 bool queryFed(const char* host, const char* url, const char *file_name)
 {  
   Serial.println(F("queryFed()..."));

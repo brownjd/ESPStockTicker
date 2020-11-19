@@ -39,6 +39,9 @@ void setup()
   setupWebServer();
   yield();
   Serial.println(F("setup()...done"));
+
+  pinMode(2, OUTPUT);
+  digitalWrite(2, HIGH);
 }
 
 void loop()
@@ -50,7 +53,22 @@ void loop()
   ArduinoOTA.handle();
   yield();
   httpServer.handleClient();
-  
+
+  if(sinceTimeUpdate >= MAX_TIME_INTERVAL)
+  {
+    if(displayQuery())
+    {
+      Serial.println("Screen On");  
+      digitalWrite(2, HIGH);
+    }
+    else
+    {
+      Serial.println("Screen Off");
+      digitalWrite(2, LOW);
+    }
+    sinceTimeUpdate = 0;
+  }
+ 
   if(wifiMulti.run() == WL_CONNECTED)
   {
     if(sinceFWUpdate >= MAX_FW_INTERVAL)
@@ -137,10 +155,11 @@ void updatePrices()
   readTickerFile(tickers);
 
   //clear memory first
-  for(int tickerNum = 0; tickerNum < MAX_STRINGS; tickerNum++)
+  for(int tickerNum = 0; tickerNum < TICKER_COUNT; tickerNum++)
   {
     price_list[tickerNum][0] = 0.0;
     price_list[tickerNum][1] = 0.0;
+    ticker_name_list[tickerNum][0] = '\0';
   }
 
   File f = SPIFFS.open(PRICING_FILE, "r");
@@ -149,7 +168,7 @@ void updatePrices()
   
   if(size > 0)
   {  
-    DynamicJsonDocument jsonQuotes(3000);
+    DynamicJsonDocument jsonQuotes(4000);
     DeserializationError err = deserializeJson(jsonQuotes, f);
     
     if(!err)
@@ -162,8 +181,13 @@ void updatePrices()
         if(ticker[0])
         {
           JsonObject quoteItem = jsonQuotes[ticker][F("quote")];      
-          price_list[tickerNum][0] = quoteItem[F("latestPrice")];;
-          price_list[tickerNum][1] = quoteItem[F("changePercent")];;
+          price_list[tickerNum][0] = quoteItem[F("latestPrice")];
+          price_list[tickerNum][1] = quoteItem[F("changePercent")];
+          //Serial.printf("Getting company name for: %s\n", ticker);
+          const char* name = quoteItem[F("companyName")];
+          //Serial.printf("company name is: %s\n", name);
+          strncpy(ticker_name_list[tickerNum], name, TICKER_CO_SIZE-1);
+          ticker_name_list[tickerNum][TICKER_CO_SIZE] = '\0';
         }
       }
     }

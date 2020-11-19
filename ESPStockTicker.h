@@ -1,4 +1,4 @@
-#define VERSION 2.39
+#define VERSION 2.40
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
@@ -65,8 +65,6 @@
   #define TFT_YELLOW ST7735_DIMYELLOW
   #define TFT_GREY ST7735_GREY
 
-  //Bill "60:01:94:75:52:F0",
-
   //list of mac addresses for ESPs soldered trotao screwed up Ebay screen that print backwards.
   //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
   const int YELLOW_TAB_SIZE = 2;
@@ -124,6 +122,13 @@
   int CHART_Y_HEIGHT = 0;
   int CHART_Y_SPACING = 0;
   int CHART_Y_TICKER_POS = 0;
+
+//screen is 320 x 256
+  //column value is left hand side or start of column
+  const int COLUMN_0 = 0;                     // SYMBOL - FIXED
+  const int COLUMN_1 = 75;                   // PRICE - FIXED
+  //the rest are set at runtime
+  int COLUMN_1_5 = 0;  // COMPANY NAME
   int COLUMN_2 = 0;    // ARROW - FXED
   int COLUMN_3 = 0;     // % CHANGE - FIXED
   int COLUMN_4 = 0;     // SYMBOL - SLIDES
@@ -182,12 +187,6 @@
   #define TFT_RED ILI9341_RED
   #define TFT_YELLOW ILI9341_YELLOW
   #define TFT_GREY ILI9341_LIGHTGREY
-  
-  //screen is 320 x 256
-  //column value is left hand side or start of column
-  const int COLUMN_0 = 0;                     // SYMBOL - FIXED
-  const int COLUMN_1 = 100;                   // PRICE - FIXED
-  //the rest are set at runtime
 
   //Chart Settings
   //left side of chart in pixels
@@ -233,7 +232,7 @@ const char* OIL_HIST_FILE = "/oilhist.csv";
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 
 const char* IEX_HOST = "cloud.iexapis.com";
-const char* PRICING_LIST_URL = "GET /stable/stock/market/batch?token=%s&filter=latestPrice,changePercent&types=quote&displayPercent=true&symbols=%s HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* PRICING_LIST_URL = "GET /stable/stock/market/batch?token=%s&filter=latestPrice,companyName,changePercent&types=quote&displayPercent=true&symbols=%s HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 //interval is number of minutes between prices
 const char* BASE_CHART_URL = "GET /stable/stock/%s/intraday-prices?token=%s&filter=average&chartInterval=%d HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 const char* KEY_STATS_URL = "GET /stable/stock/%s/stats?token=%s&filter=week52low,week52high,day200MovingAvg HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
@@ -281,7 +280,10 @@ char string_list[MAX_STRINGS][MAX_STRING_LEN];
 float price_list[MAX_STRINGS][2]; //can hold to a set of two floats
 
 const int MAX_TICKER_SIZE = 8;
-const int TICKER_COUNT = 16;
+const int TICKER_COUNT = 33;
+const int TICKER_CO_SIZE = 16;
+//to hold company names
+char ticker_name_list[TICKER_COUNT][TICKER_CO_SIZE];
 
 const int MAX_TBILLS = 365;
 const int MAX_DATE_LEN = 11;
@@ -325,6 +327,9 @@ const int MAX_FW_INTERVAL = 600000;
 const int MAX_PAGE_INTERVAL = 9500;
 //how long to remain in AP mode before rebooting
 const int MAX_AP_INTERVAL = 120000;
+//how long between hour interval checks
+const int MAX_TIME_INTERVAL = 900000; // every 15
+
 
 //keep track of when to switch pages
 elapsedMillis sincePrint;
@@ -332,6 +337,7 @@ elapsedMillis sincePrint;
 elapsedMillis sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
 elapsedMillis sinceFedAPIUpdate = MAX_FED_API_INTERVAL;
 elapsedMillis sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
+elapsedMillis sinceTimeUpdate = MAX_TIME_INTERVAL;
 
 //keep track of when to check for updates
 elapsedMillis sinceFWUpdate = MAX_FW_INTERVAL;
