@@ -1,4 +1,4 @@
-#define VERSION 2.40
+#define VERSION 2.41
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
@@ -127,7 +127,7 @@
   int CHART_Y_SPACING = 0;
   int CHART_Y_TICKER_POS = 0;
 
-//screen is 320 x 256
+  //screen is 320 x 256
   //column value is left hand side or start of column
   const int COLUMN_0 = 0;                     // SYMBOL - FIXED
   const int COLUMN_1 = 75;                   // PRICE - FIXED

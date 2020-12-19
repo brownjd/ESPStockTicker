@@ -427,11 +427,13 @@ bool printTicker(char tickers[][MAX_TICKER_SIZE], int tickerNum)
       tft->setCursor(COLUMN_1, fontYPos);
       tft->print(price);
 
+#ifdef ARDUINO_ESP8266_ESP12
       if(LARGE_SCREEN)
       {
         tft->setCursor(COLUMN_1_5, fontYPos);
         tft->print(ticker_name_list[tickerNum]);
       }
+#endif
 
       tft->fillTriangle(COLUMN_2, triangleBase, COLUMN_2+TICKER_TRIANGLE_WIDTH, triangleTop, COLUMN_2+(TICKER_TRIANGLE_WIDTH*2), triangleBase, triangleColor);
 
