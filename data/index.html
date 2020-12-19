@@ -17,20 +17,25 @@
           {
             var root = JSON.parse(this.responseText);
             console.log(root);
+            document.getElementById("shares").checked = root.shares;
             document.getElementById("bitcoin").checked = root.bitcoin;
             document.getElementById("tbills").checked = root.tbills;
             document.getElementById("oil").checked = root.oil;
+            document.getElementById("print_status").checked = root.print_status;
+
             document.getElementById("ip").innerHTML = root.ip;
             document.getElementById("iexkey").value = root.iexkey;
+            document.getElementById("octopikey").value = root.octopikey;
             document.getElementById("version").innerHTML = root.version;
             document.getElementById("macaddress").innerHTML = root.macaddress;
             document.getElementById("hostname").innerHTML = "http://"+root.hostname+".local/";
             form = document.getElementById("tickers");
-            for(i = 0; i < root.tickers.length; i++)
+            for(i = 0; i < root.num_tickers; i++)
             {
               var input = document.createElement("input");
               input.name = "ticker";
-              input.value = root.tickers[i];
+              if(i < root.tickers.length)
+                input.value = root.tickers[i];
               form.appendChild(input);
               form.appendChild(document.createElement("br"));
             }
@@ -53,12 +58,16 @@
       <!-- script to dynamically create a list of these -->
       <!-- <input type="text" name="ticker" value=""><br/>-->
       <h5>
-        <input id="bitcoin" name="bitcoin" type="checkbox" value="true"> Show Bitcoin Price History <br> 
+        <input id="shares" name="shares" type="checkbox" value="true"> Show share prices <br>
+        <input id="bitcoin" name="bitcoin" type="checkbox" value="true"> Show Bitcoin Price History<br> 
         <input id="tbills" name="tbills" type="checkbox" value="true"> Show 10 Year Treasury Bill History<br>
         <input id="oil" name="oil" type="checkbox" value="true"> Show Oil Price History<br>
+        <input id="print_status" name="print_status" type="checkbox" value="true"> Show 3D print status (octopi)<br>
         <br>
-        IEX API Key (sign up at https://iexcloud.io/cloud-login)<br>
-        <input id="iexkey" name="iexkey" type="input" value="" length="36">
+        IEX API Key (sign up at https://iexcloud.io/cloud-login)<br><br>
+        <input id="iexkey" name="iexkey" type="input" value="" length="36"><br><br>
+        OctoPrint API Key (assumes octopi.local as host)<br><br>
+        <input id="octopikey" name="octopikey" type="input" value="" length="36"><br><br>
       </h5>
     </form>
     <h5>

@@ -106,12 +106,16 @@
   const char* TBILL_LABEL = "10 Year";
   const char* OIL_LABEL = "WTI";
   const char* COIN_LABEL = "Bitcoin";
+
+  bool LARGE_SCREEN = false;
 #endif
 
 #ifdef ARDUINO_ESP8266_ESP12
   #include "Generic_SPI_TFT.h"
   #include "Adafruit_ILI9341.h"
   #include "Adafruit_HX8357.h"
+
+  bool LARGE_SCREEN = false; //this will get set at runtime
 
   //these are set at runtime, once we figure out
   //kind of screen is connected
@@ -220,7 +224,9 @@ const char* SOFT_AP_NAME = "ESPSoftAP";
 //stock ticker api and SSL fingerprint
 //const char* SSL_FINGERPRINT = "D1 34 42 D6 30 58 2F 09 A0 8C 48 B6 25 B4 6C 05 69 A4 2E 4E";
 
+const char* SETTINGS_FILE = "/settings.txt";
 const char* IEX_KEY_FILE = "/iexkey.txt";
+const char* OCTOPI_KEY_FILE = "/octopikey.txt";
 const char* TICKER_FILE = "/tickers.txt";
 const char* CHART_FILE = "/chart.json";
 const char* PRICING_FILE = "/prices.json";
@@ -228,6 +234,8 @@ const char* KEY_STATS_FILE = "/keystats.json";
 const char* TBILL_HIST_FILE = "/tbill.csv";
 const char* COIN_HIST_FILE = "/coinhist.json";
 const char* OIL_HIST_FILE = "/oilhist.csv";
+const char* OCTOPI_PRINTER_FILE = "/octopi_printer.json";
+const char* OCTOPI_JOB_FILE = "/octopi_job.json";
 
 const char* FW_REMOTE_VERSION_FILE = "/version.remote";
 
@@ -239,6 +247,10 @@ const char* KEY_STATS_URL = "GET /stable/stock/%s/stats?token=%s&filter=week52lo
 
 const char* TIME_HOST = "worldtimeapi.org";
 const char* TIME_URL = "GET /api/timezone/America/Chicago HTTP/1.0\r\nHost: worldtimeapi.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+
+const char* OCTOPI_HOST = "octopi.local";
+const char* OCTOPI_JOB_URL = "GET /api/job HTTP/1.0\r\nHost: octopi.local\r\nUser-Agent: ESP8266\r\nX-Api-Key: %s\r\nContent-Type': 'application/json\r\nConnection: close\r\n\r\n";
+const char* OCTOPI_PRINTER_URL = "GET /api/printer HTTP/1.0\r\nHost: octopi.local\r\nUser-Agent: ESP8266\r\nX-Api-Key: %s\r\nContent-Type': 'application/json\r\nConnection: close\r\n\r\n";
 
 //https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=bcb44e369321bfb3f&lastobs=180&from=&to=&filetype=csv&label=omit&layout=seriescolumn
 
@@ -254,7 +266,7 @@ const char* TBILL_URL = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DGS10&fq=
 //also used to create API GET request
 const int GET_REQUEST_BUFFER_SIZE = 1000;
 //https client connection timeout for API calls
-const int CLIENT_TIMEOUT = 10000; //http read in ms
+const int CLIENT_TIMEOUT = 5000; //http read in ms
 
 //where to check for firmware version
 const char* FIRMWARE_HOST = "raw.githubusercontent.com";
@@ -269,7 +281,7 @@ const char* FW_GET_SUFFIX = " HTTP/1.0\r\nHost: raw.githubusercontent.com\r\nUse
   const char* FW_BIN_URL = "http://espstockticker.s3-website-us-east-1.amazonaws.com/ESPStockTicker.ino.adafruit.bin";
 #endif
 
-const int IEX_KEY_LEN = 36;
+const int KEY_LEN = 36;
 const int MAX_STRINGS = 365;
 const int MAX_STRING_LEN = 11;
 
@@ -302,10 +314,14 @@ float movingAvg = 0.0f;
 float yearlow = 0.0f;
 float yearhigh = 0.0f;
 
-//TODO: create a settings file
-bool SHOW_TBILLS = true;
-bool SHOW_OIL = true;
-bool SHOW_BITCOIN = true;
+const int SETTINGS_NUM = 5;
+const int SETTINGS_SHARES = 0;
+const int SETTINGS_BITCOIN = 1;
+const int SETTINGS_TBILLS = 2;
+const int SETTINGS_OIL = 3;
+const int SETTINGS_PRINT = 4;
+
+bool SETTINGS[SETTINGS_NUM] = {true};
 
 //no need to keep these in a temp file since they're small
 float coinprice = 0.0;
@@ -320,6 +336,7 @@ ESP8266WebServer httpServer(HTTP_PORT);
 const int MAX_STOCK_API_INTERVAL = 300000;
 const int MAX_FED_API_INTERVAL = 3600000;
 const int MAX_COIN_API_INTERVAL = 60000;
+const int MAX_OCTOPI_API_INTERVAL = 60000;
 
 //how often to check for new firmware in ms
 const int MAX_FW_INTERVAL = 600000;
@@ -338,6 +355,7 @@ elapsedMillis sinceStockAPIUpdate = MAX_STOCK_API_INTERVAL;
 elapsedMillis sinceFedAPIUpdate = MAX_FED_API_INTERVAL;
 elapsedMillis sinceCoinAPIUpdate = MAX_COIN_API_INTERVAL;
 elapsedMillis sinceTimeUpdate = MAX_TIME_INTERVAL;
+elapsedMillis sinceOctoPiUpdate = MAX_OCTOPI_API_INTERVAL;
 
 //keep track of when to check for updates
 elapsedMillis sinceFWUpdate = MAX_FW_INTERVAL;

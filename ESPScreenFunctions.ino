@@ -28,6 +28,7 @@ void initScreen()
     
     SCREEN_WIDTH = HX8357_TFTHEIGHT;
     SCREEN_HEIGHT = HX8357_TFTWIDTH;
+    LARGE_SCREEN = true;
   }
   else 
   {
@@ -198,8 +199,11 @@ void displayNextPage()
   
   if(page == 0)
   {
-    //only update on page 0
-    updatePrices();
+    if(SETTINGS[SETTINGS_SHARES])
+    {
+      //only update on page 0
+      updatePrices();
+    }
   }
 
   else if(page < 3)
@@ -212,7 +216,7 @@ void displayNextPage()
   else if(page == 3)
   {
     page++;
-    if(updateChartInfo())
+    if(SETTINGS[SETTINGS_SHARES] && updateChartInfo())
     {
       yield();
       char tickers[TICKER_COUNT][MAX_TICKER_SIZE];
@@ -222,61 +226,93 @@ void displayNextPage()
         printWifiInfo();
       }
     }
+    else sincePrint = MAX_PAGE_INTERVAL;
   }
 
   //tbill page
   else if(page == 4)
   {
     page++;
-    if(SHOW_TBILLS)
+    if(SETTINGS[SETTINGS_TBILLS] && updateFedInfo(MAX_TBILLS, TBILL_HIST_FILE))
     {
-      if(updateFedInfo(MAX_TBILLS, TBILL_HIST_FILE))
+      yield();
+      if(printHistoricalChart(MAX_TBILLS, TBILL_LABEL))
       {
-        yield();
-        if(printHistoricalChart(MAX_TBILLS, TBILL_LABEL))
-        {
-           printWifiInfo();
-        }
-      }      
-      else sincePrint = MAX_PAGE_INTERVAL;
-    }
+         printWifiInfo();
+      }
+    }      
+    else sincePrint = MAX_PAGE_INTERVAL;
   }
   
   //oil page
   else if(page == 5)
   {
     page++;
-    if(SHOW_OIL)
-    { 
-      if(updateFedInfo(MAX_OIL_PRICES, OIL_HIST_FILE))
+    if(SETTINGS[SETTINGS_OIL] && updateFedInfo(MAX_OIL_PRICES, OIL_HIST_FILE))
+    {
+      yield();
+      if(printHistoricalChart(MAX_OIL_PRICES, OIL_LABEL))
       {
-        yield();
-        if(printHistoricalChart(MAX_OIL_PRICES, OIL_LABEL))
-        {
-          printWifiInfo();
-        }
+        printWifiInfo();
       }
-      else sincePrint = MAX_PAGE_INTERVAL;
     }
+    else sincePrint = MAX_PAGE_INTERVAL;
   }
 
   //coin page
   else if(page == 6)
   {
     page++;
-
-    if(SHOW_BITCOIN)
+    if(SETTINGS[SETTINGS_BITCOIN] && updateCoinInfo())
     {
-      if(updateCoinInfo())
+      yield();
+      if(printHistoricalChart(MAX_COINS+1, COIN_LABEL))
       {
+        printWifiInfo();
+      }
+    }
+    else sincePrint = MAX_PAGE_INTERVAL;
+  }
+
+  //octopi page
+  else if(page == 7)
+  {
+    page++;
+
+    bool operational;
+    bool printing;
+    bool paused;
+    float bed_temp;
+    float tool_temp;
+    
+    if(SETTINGS[SETTINGS_PRINT] && updatePrinterStatus(&operational, &printing, &paused, &bed_temp, &tool_temp))
+    {
+      yield();
+      Serial.printf_P(PSTR("\tPrinter operational: %s\n"), operational ? "true" : "false");
+      Serial.printf_P(PSTR("\tPrinter printing: %s\n"), printing ? "true" : "false");
+      Serial.printf_P(PSTR("\tPrinter paused: %s\n"), paused ? "true" : "false");   
+      Serial.printf_P(PSTR("\tNozzle temp is %0.1f\n\tBed temp is %0.1f\n"), tool_temp, bed_temp);
+
+      char file_name [200] = "\0";
+      float progress;
+      int print_time;
+      int print_time_left;
+      if(operational && updateJobStatus(file_name, 199, &progress, &print_time, &print_time_left))
+      {
+        Serial.printf_P(PSTR("\tFilename: %s\n"), file_name);
+        Serial.printf_P(PSTR("\tProgress: %0.1f\n"), progress);
+        Serial.printf_P(PSTR("\tPrint time: %f\n"), print_time);
+        Serial.printf_P(PSTR("\tPrint time left: %f\n"), print_time_left);
+
         yield();
-        if(printHistoricalChart(MAX_COINS+1, COIN_LABEL))
+
+        if(printPrinterStatus(operational, printing, paused, bed_temp, tool_temp, file_name, progress, print_time, print_time_left))
         {
           printWifiInfo();
         }
       }
-      else sincePrint = MAX_PAGE_INTERVAL;
     }
+    else sincePrint = MAX_PAGE_INTERVAL;
   }
 
   httpServer.handleClient();  
@@ -289,15 +325,16 @@ void displayNextPage()
     //clear off any cruft
     tft->fillScreen(TFT_BLACK);
     
-    if(printTickers())
+    if(SETTINGS[SETTINGS_SHARES] && printTickers())
       printWifiInfo(); 
     //if it returns false, we printed an empty page, so flip to next;
     else
       sincePrint = MAX_PAGE_INTERVAL;
+    page++;
   }
 
   //last page, loop
-  if(page == 6)
+  if(page == 8)
   {
     page = 0;
   }
@@ -334,7 +371,6 @@ bool printTickers()
       printed = true;
     rowToPrint++;
   }
-  page++;
   Serial.println(F("printTickers()...done"));
   return printed;
 }
@@ -391,10 +427,11 @@ bool printTicker(char tickers[][MAX_TICKER_SIZE], int tickerNum)
       tft->setCursor(COLUMN_1, fontYPos);
       tft->print(price);
 
-      #ifdef ARDUINO_ESP8266_ESP12
-      tft->setCursor(COLUMN_1_5, fontYPos);
-      tft->print(ticker_name_list[tickerNum]);
-      #endif
+      if(LARGE_SCREEN)
+      {
+        tft->setCursor(COLUMN_1_5, fontYPos);
+        tft->print(ticker_name_list[tickerNum]);
+      }
 
       tft->fillTriangle(COLUMN_2, triangleBase, COLUMN_2+TICKER_TRIANGLE_WIDTH, triangleTop, COLUMN_2+(TICKER_TRIANGLE_WIDTH*2), triangleBase, triangleColor);
 
@@ -439,11 +476,11 @@ bool printTickerChart(char *ticker_name)
   
   //10 - 4 pm
   int hour = 10;
-  Serial.printf("xMax: %d\n", xMax);
+  //Serial.printf("xMax: %d\n", xMax);
   int x = 0;
   for(x = xMin + (CHART_X_SPACING/2); x <= xMax; x += CHART_X_SPACING)
   {
-    Serial.printf("x: %d\n", x);
+    //Serial.printf("x: %d\n", x);
     tft->drawFastVLine(x, yMin, len, TFT_WHITE);
     int posX = (hour >= 10) ? x + TICKER_CHART_LABEL_HORIZONTAL_OFFSET_X_AXIS - 1 : x + TICKER_CHART_LABEL_HORIZONTAL_OFFSET_X_AXIS;
     tft->setCursor(posX, textPosY);
@@ -717,4 +754,64 @@ void printGraphLine(int totalDataPoints, const int xMin, const int xMax, const i
 float mmap(float x, float x_min, float x_max, float y_min, float y_max)
 {
   return (x - x_min) * (y_max - y_min) / (x_max - x_min) + y_min;
+}
+
+bool printPrinterStatus(bool operational, bool printing, bool paused, float bed_temp, float tool_temp, char* filename, float progress, float print_time, float print_time_left)
+{
+
+  Serial.println(F("printPrinterStatus()..."));
+  bool ret = true;
+  tft->fillScreen(TFT_BLACK);
+
+  tft->setTextWrap(false); 
+  tft->setFont(HISTORICAL_TITLE_FONT);
+  tft->setTextSize(HISTORICAL_TITLE_FONT_SIZE);
+  tft->setTextColor(TFT_WHITE);
+
+  tft->setCursor(0, 20); 
+  tft->print("OctoPrint Status");
+
+  tft->setFont(HISTORICAL_LABEL_FONT);
+  tft->setTextSize(HISTORICAL_LABEL_FONT_SIZE);
+
+  char msg[2000];
+
+  sprintf(msg, "Printer operational: %s\n", operational ? "true" : "false");
+  tft->setCursor(0, 45);
+  tft->printf(msg);
+
+  sprintf(msg, "Printer printing: %s\n", printing ? "true" : "false");
+  tft->setCursor(0, 65);
+  tft->print(msg);
+
+  sprintf(msg, "Printer paused: %s\n", paused ? "true" : "false");
+  tft->setCursor(0, 85);
+  tft->print(msg);
+
+  sprintf(msg, "Printer bed temp: %0.1f C", bed_temp);
+  tft->setCursor(0, 105);
+  tft->print(msg);
+
+  sprintf(msg, "Printer nozzle temp: %0.1f C", tool_temp);
+  tft->setCursor(0, 125);
+  tft->print(msg);
+
+  sprintf(msg, "File: '%s'", filename);
+  tft->setCursor(0, 145);
+  tft->print(msg);
+
+  sprintf(msg, "Percent complete: %0.1f%%", progress);
+  tft->setCursor(0, 165);
+  tft->print(msg);
+  
+  sprintf(msg, "Print time: %02d:%02d:%02d",  hour(print_time), minute(print_time), second(print_time));
+  tft->setCursor(0, 185);
+  tft->print(msg);
+
+  sprintf(msg, "Print left: %02d:%02d:%02d",  hour(print_time_left), minute(print_time_left), second(print_time_left));
+  tft->setCursor(0, 205);
+  tft->print(msg);
+  
+  Serial.println(F("printPrinterStatus()...done"));
+  return ret;
 }

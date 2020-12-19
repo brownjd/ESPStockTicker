@@ -9,6 +9,7 @@
 #include <ArduinoOTA.h>
 #include <Adafruit_GFX.h>
 #include <elapsedMillis.h>
+#include <TimeLib.h>
 
 #include "ESPStockTicker.h"
 //serve static html from PROGMEM
@@ -20,7 +21,7 @@
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   yield();
   delay(2000);
   yield();
@@ -42,6 +43,8 @@ void setup()
 
   pinMode(2, OUTPUT);
   digitalWrite(2, HIGH);
+
+  readSettings();
 }
 
 void loop()
@@ -53,24 +56,24 @@ void loop()
   ArduinoOTA.handle();
   yield();
   httpServer.handleClient();
-
-  if(sinceTimeUpdate >= MAX_TIME_INTERVAL)
-  {
-    if(displayQuery())
-    {
-      Serial.println("Screen On");  
-      digitalWrite(2, HIGH);
-    }
-    else
-    {
-      Serial.println("Screen Off");
-      digitalWrite(2, LOW);
-    }
-    sinceTimeUpdate = 0;
-  }
  
   if(wifiMulti.run() == WL_CONNECTED)
   {
+    if(sinceTimeUpdate >= MAX_TIME_INTERVAL)
+    {
+      if(displayQuery())
+      {
+        Serial.println(F("\tScreen On"));  
+        digitalWrite(2, HIGH);
+      }
+      else
+      {
+        Serial.println(F("\tScreen Off"));
+        digitalWrite(2, LOW);
+      }
+      sinceTimeUpdate = 0;
+    }
+    
     if(sinceFWUpdate >= MAX_FW_INTERVAL)
     {
       checkAvailableFirmwareVersion();
@@ -85,27 +88,33 @@ void loop()
     
     if(sinceStockAPIUpdate >= MAX_STOCK_API_INTERVAL)
     {
-      yield();
-      httpServer.handleClient();
-      queryPrices();
-      
-      yield();
-      httpServer.handleClient();
-      queryChartInfo();
-
+      if(SETTINGS[SETTINGS_SHARES])
+      {
+        yield();
+        httpServer.handleClient();
+        queryPrices();
+        
+        yield();
+        httpServer.handleClient();
+        queryChartInfo();
+      }
       sinceStockAPIUpdate = 0;
     }
     
     if(sinceFedAPIUpdate >= MAX_FED_API_INTERVAL)
     {
-      if(SHOW_TBILLS)
+      if(SETTINGS[SETTINGS_TBILLS])
       {
         yield();
         httpServer.handleClient();
         queryFed(FED_HOST, TBILL_URL, TBILL_HIST_FILE);
         
       }
-      if(SHOW_OIL)
+
+      yield();
+      httpServer.handleClient();
+      
+      if(SETTINGS[SETTINGS_OIL])
       {
         yield();
         httpServer.handleClient();
@@ -117,21 +126,41 @@ void loop()
 
     if(sinceCoinAPIUpdate >= MAX_COIN_API_INTERVAL)
     {
-      if(SHOW_BITCOIN)
+      if(SETTINGS[SETTINGS_BITCOIN])
       {
         yield();
         httpServer.handleClient();
-        queryCoinCurrent();
-        yield();
-        httpServer.handleClient();
-        queryCoinHistorical();
+        if(queryCoinCurrent())
+        {
+          yield();
+          httpServer.handleClient();
+          queryCoinHistorical();
+        }
         yield();
         httpServer.handleClient();
       }
       
       sinceCoinAPIUpdate = 0;
     }
-    
+
+    if(sinceOctoPiUpdate >= MAX_OCTOPI_API_INTERVAL)
+    {
+      if(SETTINGS[SETTINGS_PRINT])
+      {
+        yield();
+        httpServer.handleClient();
+        queryOctoPiPrinterStatus();
+        yield();
+        httpServer.handleClient();
+        queryOctoPiJobStatus();
+        yield();
+        httpServer.handleClient();
+      }
+      
+      sinceOctoPiUpdate = 0;
+    }
+
+    //page refresh
     if(sincePrint >= MAX_PAGE_INTERVAL)
     {
       printFreeMem("");
@@ -399,11 +428,11 @@ bool updateCoinInfo()
   
   if(f.size() > 0)
   {
-    DynamicJsonDocument root(3000);
-    DeserializationError err = deserializeJson(root, f);
+    DynamicJsonDocument doc(3000);
+    DeserializationError err = deserializeJson(doc, f);
     if(!err)
     {
-      JsonObject bpi = root[F("bpi")];
+      JsonObject bpi = doc[F("bpi")];
       
       int i = 0;
       //char debugBuf[100];
@@ -444,6 +473,162 @@ bool updateCoinInfo()
   f.close();
   
   Serial.println(F("updateCoinInfo()...done"));
+  return ret;
+}
+
+bool updatePrinterStatus(bool *operational, bool *printing, bool *paused, float *bed_temp, float *tool_temp)
+{
+  Serial.println(F("updatePrinterStatus()..."));
+  bool ret = true;
+  File f = SPIFFS.open(OCTOPI_PRINTER_FILE, "r");
+  Serial.printf_P(PSTR("\tPrinter Status file size: %d\n"), f.size());
+
+  *operational = false;
+  *printing = false;
+  *paused = false;
+  *bed_temp = 0;
+  *tool_temp = 0;
+  
+  if(f.size() > 0)
+  {
+    DynamicJsonDocument doc(3000);
+    DeserializationError err = deserializeJson(doc, f);
+    if(!err)
+    {
+      const char* state_text = doc["state"]["text"]; // "Operational"
+
+      JsonObject temperature_bed = doc["temperature"]["bed"];
+      *bed_temp = temperature_bed["actual"]; // 21.25
+      //int temperature_bed_offset = temperature_bed["offset"]; // 0
+      //int temperature_bed_target = temperature_bed["target"]; // 0
+
+      JsonObject temperature_tool0 = doc["temperature"]["tool0"];
+      *tool_temp = temperature_tool0["actual"]; // 21.28
+      //int temperature_tool0_offset = temperature_tool0["offset"]; // 0
+      //int temperature_tool0_target = temperature_tool0["target"]; // 0
+
+      //Serial.printf("\tPrinter is %s\n\tNozzle temp is %0.1f\n\tBed temp is %0.1f\n", state_text, tool_temp, bed_temp);
+
+      JsonObject state_flags = doc["state"]["flags"];
+  
+      //bool state_flags_cancelling = state_flags["cancelling"]; // false
+      //bool state_flags_closedOrError = state_flags["closedOrError"]; // false
+      //bool state_flags_error = state_flags["error"]; // false
+      //bool state_flags_finishing = state_flags["finishing"]; // false
+      *operational = state_flags["operational"]; // true
+      *paused = state_flags["paused"]; // false
+      //bool state_flags_pausing = state_flags["pausing"]; // false
+      *printing = state_flags["printing"]; // false
+      //bool state_flags_ready = state_flags["ready"]; // true
+      //bool state_flags_resuming = state_flags["resuming"]; // false
+      //bool state_flags_sdReady = state_flags["sdReady"]; // false
+
+    }
+    else
+    {
+      switch (err.code()) {
+        case DeserializationError::InvalidInput:
+          //printMsg("Printer is not operational.");
+          //this is not an error. The api returns a non-json compliant string when it is not operational.
+          //ret should be true in this case;
+          break;
+        case DeserializationError::EmptyInput:
+        case DeserializationError::IncompleteInput:
+        case DeserializationError::NoMemory:
+        case DeserializationError::NotSupported:
+        case DeserializationError::TooDeep:
+        default:
+          printStatusMsg(F("getOctoPiPrinterStatus parse error. "));
+          Serial.printf_P(PSTR("%s%s\n"), ERROR_MSG_INDENT, err.c_str());
+          sinceFedAPIUpdate = MAX_OCTOPI_API_INTERVAL;
+          ret = false;
+      }
+    }
+  }
+  else
+  {
+    sinceOctoPiUpdate = MAX_OCTOPI_API_INTERVAL;
+    ret = false;
+  }
+
+  Serial.println(F("updatePrinterStatus()...done"));
+  return ret;
+}
+
+bool updateJobStatus(char* file_name, int file_name_size, float* progress_completion, int* print_time, int* print_time_left)
+{
+  Serial.println(F("updateJobStatus()..."));
+  bool ret = true;
+  printStatusMsg("Checking OctoPi Job Status.");
+
+  *progress_completion = 0;
+  *print_time = 0;
+  *print_time_left = 0;
+
+  File f = SPIFFS.open(OCTOPI_JOB_FILE, "r");
+  Serial.printf_P(PSTR("\tPrinter Job Status file size: %d\n"), f.size());
+  
+  if(f.size() > 0)
+  {
+    DynamicJsonDocument doc(3000);
+    DeserializationError err = deserializeJson(doc, f);
+    if(!err)
+    {
+      JsonObject job = doc["job"];
+      JsonObject job_file = job["file"];
+      //long job_file_date = job_file["date"]; // 1606792469
+      //const char* job_file_display = job_file["display"]; // "Parker_Vector_Barrel - Long_0.15mm_PLA_MINI_37m.gcode"
+      
+      //const char* job_file_origin = job_file["origin"]; // "local"
+      //const char* job_file_path = job_file["path"]; // "Parker_Vector_Barrel_-_Long_0.15mm_PLA_MINI_37m.gcode"
+      //long job_file_size = job_file["size"]; // 1770465
+      if(!job_file["name"].isNull())
+      {
+        const char* job_file_name = job_file["name"]; // "Parker_Vector_Barrel_-_Long_0.15mm_PLA_MINI_37m.gcode"
+        strncpy(file_name, job_file_name, file_name_size);
+      }
+
+      //const char* job_user = job["user"]; // "_api"
+
+      JsonObject progress = doc["progress"];
+      *progress_completion = progress["completion"]; // 73.692843405546
+      //long progress_filepos = progress["filepos"]; // 1304706
+      *print_time = progress["printTime"]; // 1783
+      *print_time_left = progress["printTimeLeft"]; // 597
+      //const char* progress_printTimeLeftOrigin = progress["printTimeLeftOrigin"]; // "estimate"
+
+      //const char* state = doc["state"]; // "Printing"
+      
+      ret = true;
+    }
+    else
+    {
+      Serial.printf_P(PSTR("%s%s\n"), ERROR_MSG_INDENT, err.c_str());
+      switch (err.code()) {
+        //case DeserializationError::InvalidInput:
+        //case DeserializationError::EmptyInput:
+        //case DeserializationError::IncompleteInput:
+        //case DeserializationError::NoMemory:
+        //case DeserializationError::NotSupported:
+        //case DeserializationError::TooDeep:
+        //  ret = false;
+        //  break;
+        default:
+          printStatusMsg(F("updateJobStatus parse error. "));
+          Serial.printf_P(PSTR("%s%s\n"), ERROR_MSG_INDENT, err.c_str());
+          sinceOctoPiUpdate = MAX_OCTOPI_API_INTERVAL;
+          ret = false;
+          break;
+      }
+    }
+  }
+  else
+  {
+    sinceOctoPiUpdate = MAX_OCTOPI_API_INTERVAL;
+    ret = false;
+  }
+
+  Serial.println(F("updateJobStatus()...done"));
   return ret;
 }
 
