@@ -17,6 +17,7 @@ void setupWebServer()
   httpServer.serveStatic(OCTOPI_KEY_FILE, SPIFFS, OCTOPI_KEY_FILE, "max-age=0");
   httpServer.serveStatic(OCTOPI_PRINTER_FILE, SPIFFS, OCTOPI_KEY_FILE, "max-age=0");
   httpServer.serveStatic(OCTOPI_JOB_FILE, SPIFFS, OCTOPI_KEY_FILE, "max-age=0");
+  httpServer.serveStatic(SETTINGS_FILE, SPIFFS, SETTINGS_FILE, "max-age=0");
   httpServer.begin();
 }
 
@@ -44,6 +45,7 @@ void setTickers()
   SETTINGS[SETTINGS_OIL] = String(F("true")).equals(httpServer.arg(F("oil")));
   SETTINGS[SETTINGS_SHARES] =  String(F("true")).equals(httpServer.arg(F("shares")));
   SETTINGS[SETTINGS_PRINT] = String(F("true")).equals(httpServer.arg(F("print_status")));
+  SETTINGS[SETTINGS_BIG_SCREEN] = String(F("true")).equals(httpServer.arg(F("large_screen")));
 
   writeSettings();
   
@@ -110,6 +112,7 @@ void getTickers()
   doc[F("oil")] = SETTINGS[SETTINGS_OIL];
   doc[F("shares")] = SETTINGS[SETTINGS_SHARES];
   doc[F("print_status")] = SETTINGS[SETTINGS_PRINT];
+  doc[F("large_screen")] = SETTINGS[SETTINGS_BIG_SCREEN];
   
   char iexKey[KEY_LEN] = {""};
   
@@ -313,11 +316,11 @@ bool displayQuery()
   bool ret = true;
   printStatusMsg(F("Getting time."));
   WiFiClient client;
-  if (getConnection(&client, TIME_HOST, HTTP_PORT, TIME_URL))
+  if(getConnection(&client, TIME_HOST, HTTP_PORT, TIME_URL))
   {
     DynamicJsonDocument jsonDoc(600);
     DeserializationError err = deserializeJson(jsonDoc, client);
-    if (!err)
+    if(!err)
     {
       //"datetime":"2020-10-28T14:16:41.499812-05:00"
       const char *dateTimeStr = jsonDoc[F("datetime")];
@@ -336,6 +339,11 @@ bool displayQuery()
       sinceTimeUpdate = MAX_TIME_INTERVAL;
       ret = true;
     }
+  }
+  else
+  {
+    ret = true;
+    sinceTimeUpdate = MAX_TIME_INTERVAL;
   }
   Serial.println(F("displayQuery()...done"));
   return ret;
@@ -614,7 +622,7 @@ bool getConnection(WiFiClient* client, const char *host, const int port, const c
     client->readBytesUntil('\r', status, sizeof(status));
     Serial.printf_P(PSTR("%sHTTP Status: %s\n"), ERROR_MSG_INDENT, status);
           
-    if(!(strcmp(status, "HTTP/1.0 504 Gateway Timeout") || (strcmp(status, "HTTP/1.1 504 Gateway Timeout"))))
+    if((strstr(status, "504") != NULL) || (strstr(status, "503") != NULL))
     {
        Serial.printf_P(PSTR("%sRetrying request: %s\n"), ERROR_MSG_INDENT, status);
  
@@ -625,15 +633,16 @@ bool getConnection(WiFiClient* client, const char *host, const int port, const c
         client->setTimeout(CLIENT_TIMEOUT);
         //make the request
         client->print(buf);
-        if(!(strcmp(status, "HTTP/1.0 504 Gateway Timeout") || (strcmp(status, "HTTP/1.1 504 Gateway Timeout"))))
+        if((strstr(status, "504") != NULL) || (strstr(status, "503") != NULL))
         {   
-          Serial.printf_P(PSTR("%sHTTP 504 response second time. Giving up.\n"), ERROR_MSG_INDENT);
+          Serial.printf_P(PSTR("%sHTTP Status: %s\n"), ERROR_MSG_INDENT, status);
+          Serial.printf_P(PSTR("%sGiving up.\n"), ERROR_MSG_INDENT);
           return false;
         }
       }
     }
     
-    if(!(strcmp(status, "HTTP/1.0 200 OK") || (strcmp(status, "HTTP/1.1 200 OK"))))
+    if(strstr(status, "200") == NULL)
     {
       Serial.printf_P(PSTR("%sUnexpected response: %s\n"), ERROR_MSG_INDENT, status);
       return false;
@@ -653,7 +662,7 @@ bool getConnection(WiFiClient* client, const char *host, const int port, const c
     printStatusMsg(F("Remote host unreachable."));
     ret = false;
   }
-
+  
   //Serial.println(F("getConnection()...done"));
   return ret;
 }

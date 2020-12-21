@@ -12,23 +12,26 @@ void initScreen()
 {
   
 #ifdef ARDUINO_ESP8266_ESP12
+
+  //This method works on a cold start, but is unrealiable after a crash and reboot
   //This will check for either an HX8357 or ILI9341 based on the chip id
   //I had to create a dummy tft class to leverage the SPI methods to query
   //the chip. Once that is known, then I can assign the tft pointer to the
   //appropriate subclass.
-  Generic_SPI_TFT g_tft = Generic_SPI_TFT(TFT_CS, TFT_DC);
-  g_tft.begin(0);
-  uint8_t x = g_tft.readcommand8(0x04);
-  Serial.printf("Chip ID (0x04): 0x%02X\n", x);
+  //Generic_SPI_TFT g_tft = Generic_SPI_TFT(TFT_CS, TFT_DC);
+  //g_tft.begin(0);
+ 
+  //uint8_t x = g_tft.readcommand8(0x04);
+  //Serial.printf("Chip ID (0x04): 0x%02X\n", x);
   
-  if(x == 0xFF || x == 0x80)
+  //if(x == 0xFF || x == 0x80)
+  if(SETTINGS[SETTINGS_BIG_SCREEN])
   {
     Serial.println("Using HX8347");
     tft = new Adafruit_HX8357(TFT_CS, TFT_DC);
     
     SCREEN_WIDTH = HX8357_TFTHEIGHT;
     SCREEN_HEIGHT = HX8357_TFTWIDTH;
-    LARGE_SCREEN = true;
   }
   else 
   {
@@ -428,7 +431,7 @@ bool printTicker(char tickers[][MAX_TICKER_SIZE], int tickerNum)
       tft->print(price);
 
 #ifdef ARDUINO_ESP8266_ESP12
-      if(LARGE_SCREEN)
+      if(SETTINGS[SETTINGS_BIG_SCREEN])
       {
         tft->setCursor(COLUMN_1_5, fontYPos);
         tft->print(ticker_name_list[tickerNum]);

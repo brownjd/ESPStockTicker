@@ -1,4 +1,4 @@
-#define VERSION 2.41
+#define VERSION 2.42
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
@@ -106,8 +106,6 @@
   const char* TBILL_LABEL = "10 Year";
   const char* OIL_LABEL = "WTI";
   const char* COIN_LABEL = "Bitcoin";
-
-  bool LARGE_SCREEN = false;
 #endif
 
 #ifdef ARDUINO_ESP8266_ESP12
@@ -314,12 +312,13 @@ float movingAvg = 0.0f;
 float yearlow = 0.0f;
 float yearhigh = 0.0f;
 
-const int SETTINGS_NUM = 5;
+const int SETTINGS_NUM = 6;
 const int SETTINGS_SHARES = 0;
 const int SETTINGS_BITCOIN = 1;
 const int SETTINGS_TBILLS = 2;
 const int SETTINGS_OIL = 3;
 const int SETTINGS_PRINT = 4;
+const int SETTINGS_BIG_SCREEN = 5;
 
 bool SETTINGS[SETTINGS_NUM] = {true};
 

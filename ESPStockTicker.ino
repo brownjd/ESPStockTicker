@@ -31,6 +31,8 @@ void setup()
 
   cleanupDataFiles();
 
+  readSettings();
+
   initScreen();
   yield();
   connectWifi();
@@ -43,8 +45,6 @@ void setup()
 
   pinMode(2, OUTPUT);
   digitalWrite(2, HIGH);
-
-  readSettings();
 }
 
 void loop()
@@ -403,6 +403,7 @@ bool updateFedInfo(const int max_data_points, const char* file_name)
   {
     Serial.printf_P(PSTR("%sFed data file size: %d\n"), ERROR_MSG_INDENT, f.size());
     printStatusMsg(F("Error: Fed data file."));
+    sinceFedAPIUpdate = MAX_FED_API_INTERVAL;
     ret = false;
   }
 

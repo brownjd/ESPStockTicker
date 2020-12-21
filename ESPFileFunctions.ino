@@ -172,7 +172,7 @@ void writeKeyFile(char iexKey[], const char* keyFile)
   File f = SPIFFS.open(keyFile, "w");
   
   int size = f.print(iexKey);
-  if(size < KEY_LEN)
+  if(size >= KEY_LEN)
   {
     Serial.printf_P(PSTR("\tKey size error: %d\n"), size);
   }

@@ -22,6 +22,7 @@
             document.getElementById("tbills").checked = root.tbills;
             document.getElementById("oil").checked = root.oil;
             document.getElementById("print_status").checked = root.print_status;
+            document.getElementById("large_screen").checked = root.large_screen;
 
             document.getElementById("ip").innerHTML = root.ip;
             document.getElementById("iexkey").value = root.iexkey;
@@ -68,6 +69,8 @@
         <input id="iexkey" name="iexkey" type="input" value="" length="36"><br><br>
         OctoPrint API Key (assumes octopi.local as host)<br><br>
         <input id="octopikey" name="octopikey" type="input" value="" length="36"><br><br>
+        Adafruit Huzzah Featherwings come in two flavors, 2.5" and 3.5". Check if 3.5".<br><br>
+        <input id="large_screen" name="large_screen" type="checkbox" value="true"> Large Screen<br><br>
       </h5>
     </form>
     <h5>
