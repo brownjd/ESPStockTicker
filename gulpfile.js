@@ -32,7 +32,6 @@ const uglify = require('gulp-uglify');
 const gzip = require('gulp-gzip');
 const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
-const favicon = require('gulp-base64-favicon');
 const debug = require('gulp-debug');
 const tap = require('gulp-tap');
 const log = require('fancy-log');
@@ -68,7 +67,6 @@ function hex (filename, data) {
 
 gulp.task('default', function() {
     return gulp.src(dataFolder + '*.html')
-       // .pipe(favicon())i
         .pipe(debug({title: 'file:'}))
         .pipe(inline({
             base: dataFolder,
