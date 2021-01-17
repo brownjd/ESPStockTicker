@@ -6,7 +6,7 @@
 #include <ESP8266httpUpdate.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
-#include <ArduinoOTA.h>
+//#include <ArduinoOTA.h>
 #include <Adafruit_GFX.h>
 #include <elapsedMillis.h>
 #include <TimeLib.h>
@@ -49,13 +49,13 @@ void setup()
 
 void loop()
 {
-  httpServer.handleClient();
+  httpServer.handleClient(); 
   yield();
   startSoftAP();
   yield();
-  ArduinoOTA.handle();
+  //ArduinoOTA.handle();
   yield();
-  httpServer.handleClient();
+  httpServer.handleClient(); 
  
   if(wifiMulti.run() == WL_CONNECTED)
   {
@@ -91,11 +91,11 @@ void loop()
       if(SETTINGS[SETTINGS_SHARES])
       {
         yield();
-        httpServer.handleClient();
+        httpServer.handleClient(); 
         queryPrices();
         
         yield();
-        httpServer.handleClient();
+        httpServer.handleClient(); 
         queryChartInfo();
       }
       sinceStockAPIUpdate = 0;
@@ -106,18 +106,18 @@ void loop()
       if(SETTINGS[SETTINGS_TBILLS])
       {
         yield();
-        httpServer.handleClient();
+        httpServer.handleClient(); 
         queryFed(FED_HOST, TBILL_URL, TBILL_HIST_FILE);
         
       }
 
       yield();
-      httpServer.handleClient();
+      httpServer.handleClient(); 
       
       if(SETTINGS[SETTINGS_OIL])
       {
         yield();
-        httpServer.handleClient();
+        httpServer.handleClient(); 
         queryFed(FED_HOST, OIL_URL, OIL_HIST_FILE);
       }
 
@@ -129,15 +129,15 @@ void loop()
       if(SETTINGS[SETTINGS_BITCOIN])
       {
         yield();
-        httpServer.handleClient();
+        httpServer.handleClient(); 
         if(queryCoinCurrent())
         {
           yield();
-          httpServer.handleClient();
+          httpServer.handleClient(); 
           queryCoinHistorical();
         }
         yield();
-        httpServer.handleClient();
+        httpServer.handleClient(); 
       }
       
       sinceCoinAPIUpdate = 0;
@@ -148,13 +148,13 @@ void loop()
       if(SETTINGS[SETTINGS_PRINT])
       {
         yield();
-        httpServer.handleClient();
+        httpServer.handleClient(); 
         queryOctoPiPrinterStatus();
         yield();
-        httpServer.handleClient();
+        httpServer.handleClient(); 
         queryOctoPiJobStatus();
         yield();
-        httpServer.handleClient();
+        httpServer.handleClient(); 
       }
       
       sinceOctoPiUpdate = 0;
@@ -168,10 +168,10 @@ void loop()
       //page can change sincePrint, so need to do this at the outset
       sincePrint = 0;
       yield();
-      httpServer.handleClient();
+      httpServer.handleClient(); 
       displayNextPage();
       yield();
-      httpServer.handleClient();
+      httpServer.handleClient(); 
     }
   }
 }

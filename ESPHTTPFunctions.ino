@@ -291,7 +291,7 @@ bool queryChartInfo()
     ret = false;
   }
 
-  httpServer.handleClient();
+  httpServer.handleClient(); 
   yield();
 
   requestBuffer[0] = '\0';
@@ -440,6 +440,8 @@ bool queryCoinCurrent()
   WiFiClientSecure client;
   //FIX suggested by https://github.com/esp8266/Arduino/issues/4826#issuecomment-491813938 that worked. Seems like a bug to me.
   client.setInsecure();
+  client.setNoDelay(true);
+  client.setCiphersLessSecure();
   if (getConnection(&client, COIN_HOST, HTTPS_PORT, COIN_CURR_URL))
   {
     DynamicJsonDocument root(1000);
@@ -562,6 +564,7 @@ bool bufferToFile(const char *host, const char *buf, const char* filename)
   WiFiClientSecure client;
   //FIX suggested by https://github.com/esp8266/Arduino/issues/4826#issuecomment-491813938 that worked. Seems like a bug to me.
   client.setInsecure();
+  client.setCiphersLessSecure();
   client.setNoDelay(true);
   bool ret = bufferToFile(&client, host, buf, HTTPS_PORT, filename);
   client.stop();

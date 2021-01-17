@@ -1,4 +1,4 @@
-#define VERSION 2.42
+#define VERSION 2.43
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
@@ -68,14 +68,14 @@
   //list of mac addresses for ESPs soldered trotao screwed up Ebay screen that print backwards.
   //i call them YELLOWTABS because of they had yellow tabs on the screen protectors
   const int YELLOW_TAB_SIZE = 2;
-  const char YELLOW_TABS[YELLOW_TAB_SIZE][18] = { "60:01:94:74:4A:42", "68:C6:3A:9F:B6:61" };
+  const char YELLOW_TABS[YELLOW_TAB_SIZE][18] PROGMEM = { "60:01:94:74:4A:42", "68:C6:3A:9F:B6:61" };
 
   const int YELLOW_TAB_NON_REVERSED_SIZE = 1;
-  const char YELLOW_TABS_NON_REVERSED[YELLOW_TAB_NON_REVERSED_SIZE][18] = { "BC:DD:C2:16:CA:4F" };
+  const char YELLOW_TABS_NON_REVERSED[YELLOW_TAB_NON_REVERSED_SIZE][18] PROGMEM = { "BC:DD:C2:16:CA:4F" };
 
   const int ROTATION_SIZE = 3;
   //These are the bright ones. We can probably just make this the default
-  const char ROTATION_OVERRIDES[ROTATION_SIZE][18] = { "DC:4F:22:1C:2A:98", "B4:E6:2D:69:D5:0D", "BC:DD:C2:16:CA:4F" };
+  const char ROTATION_OVERRIDES[ROTATION_SIZE][18] PROGMEM = { "DC:4F:22:1C:2A:98", "B4:E6:2D:69:D5:0D", "BC:DD:C2:16:CA:4F" };
 
   //calculate the number of rows we can fit in usable area
   const int DISPLAY_ROWS = (SCREEN_HEIGHT - STATUS_MSG_HEIGHT) / TICKER_ROW_HEIGHT;
@@ -103,9 +103,9 @@
   //vertical position of chart labels - hour
   const int CHART_Y_TICKER_POS = 118;
 
-  const char* TBILL_LABEL = "10 Year";
-  const char* OIL_LABEL = "WTI";
-  const char* COIN_LABEL = "Bitcoin";
+  const char* TBILL_LABEL PROGMEM = "10 Year";
+  const char* OIL_LABEL PROGMEM = "WTI";
+  const char* COIN_LABEL PROGMEM = "Bitcoin";
 #endif
 
 #ifdef ARDUINO_ESP8266_ESP12
@@ -194,9 +194,9 @@
   //left side of chart in pixels
   const int CHART_X_ORIGIN = 55;
 
-  const char* TBILL_LABEL = "10 Year TBill";
-  const char* OIL_LABEL = "WTI";
-  const char* COIN_LABEL = "Bitcoin Price";
+  const char* TBILL_LABEL PROGMEM = "10 Year TBill";
+  const char* OIL_LABEL PROGMEM = "WTI";
+  const char* COIN_LABEL PROGMEM = "Bitcoin Price";
 #endif
 
 //SCL ->  SCK   ->  D5
@@ -209,7 +209,7 @@
 #define ARDUINOJSON_USE_DOUBLE 0
 
 const int MAX_WIFI_NETWORKS = 5;
-const char *WIFI_FILE = "/wifi.txt";
+const char *WIFI_FILE PROGMEM = "/wifi.txt";
 
 //number of 500 ms increments to wait for a connection
 const int MAX_WIFI_TIMEOUT = 20;
@@ -217,48 +217,48 @@ const int HTTP_PORT = 80;
 const int HTTPS_PORT = 443;
 const int OTA_PORT = 8080;
 char hostName [20] = "esp";
-const char* SOFT_AP_NAME = "ESPSoftAP";
+const char* SOFT_AP_NAME PROGMEM = "ESPSoftAP";
 
 //stock ticker api and SSL fingerprint
 //const char* SSL_FINGERPRINT = "D1 34 42 D6 30 58 2F 09 A0 8C 48 B6 25 B4 6C 05 69 A4 2E 4E";
 
-const char* SETTINGS_FILE = "/settings.txt";
-const char* IEX_KEY_FILE = "/iexkey.txt";
-const char* OCTOPI_KEY_FILE = "/octopikey.txt";
-const char* TICKER_FILE = "/tickers.txt";
-const char* CHART_FILE = "/chart.json";
-const char* PRICING_FILE = "/prices.json";
-const char* KEY_STATS_FILE = "/keystats.json";
-const char* TBILL_HIST_FILE = "/tbill.csv";
-const char* COIN_HIST_FILE = "/coinhist.json";
-const char* OIL_HIST_FILE = "/oilhist.csv";
-const char* OCTOPI_PRINTER_FILE = "/octopi_printer.json";
-const char* OCTOPI_JOB_FILE = "/octopi_job.json";
+const char* SETTINGS_FILE PROGMEM = "/settings.txt";
+const char* IEX_KEY_FILE PROGMEM = "/iexkey.txt";
+const char* OCTOPI_KEY_FILE PROGMEM = "/octopikey.txt";
+const char* TICKER_FILE PROGMEM = "/tickers.txt";
+const char* CHART_FILE PROGMEM = "/chart.json";
+const char* PRICING_FILE PROGMEM = "/prices.json";
+const char* KEY_STATS_FILE PROGMEM = "/keystats.json";
+const char* TBILL_HIST_FILE PROGMEM = "/tbill.csv";
+const char* COIN_HIST_FILE PROGMEM = "/coinhist.json";
+const char* OIL_HIST_FILE PROGMEM = "/oilhist.csv";
+const char* OCTOPI_PRINTER_FILE PROGMEM = "/octopi_printer.json";
+const char* OCTOPI_JOB_FILE PROGMEM = "/octopi_job.json";
 
-const char* FW_REMOTE_VERSION_FILE = "/version.remote";
+const char* FW_REMOTE_VERSION_FILE PROGMEM = "/version.remote";
 
-const char* IEX_HOST = "cloud.iexapis.com";
-const char* PRICING_LIST_URL = "GET /stable/stock/market/batch?token=%s&filter=latestPrice,companyName,changePercent&types=quote&displayPercent=true&symbols=%s HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* IEX_HOST PROGMEM = "cloud.iexapis.com";
+const char* PRICING_LIST_URL PROGMEM = "GET /stable/stock/market/batch?token=%s&filter=latestPrice,companyName,changePercent&types=quote&displayPercent=true&symbols=%s HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 //interval is number of minutes between prices
-const char* BASE_CHART_URL = "GET /stable/stock/%s/intraday-prices?token=%s&filter=average&chartInterval=%d HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
-const char* KEY_STATS_URL = "GET /stable/stock/%s/stats?token=%s&filter=week52low,week52high,day200MovingAvg HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* BASE_CHART_URL PROGMEM = "GET /stable/stock/%s/intraday-prices?token=%s&filter=average&chartInterval=%d HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* KEY_STATS_URL PROGMEM = "GET /stable/stock/%s/stats?token=%s&filter=week52low,week52high,day200MovingAvg HTTP/1.0\r\nHost: cloud.iexapis.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
-const char* TIME_HOST = "worldtimeapi.org";
-const char* TIME_URL = "GET /api/timezone/America/Chicago HTTP/1.0\r\nHost: worldtimeapi.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* TIME_HOST PROGMEM = "worldtimeapi.org";
+const char* TIME_URL PROGMEM = "GET /api/timezone/America/Chicago HTTP/1.0\r\nHost: worldtimeapi.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
-const char* OCTOPI_HOST = "octopi.local";
-const char* OCTOPI_JOB_URL = "GET /api/job HTTP/1.0\r\nHost: octopi.local\r\nUser-Agent: ESP8266\r\nX-Api-Key: %s\r\nContent-Type': 'application/json\r\nConnection: close\r\n\r\n";
-const char* OCTOPI_PRINTER_URL = "GET /api/printer HTTP/1.0\r\nHost: octopi.local\r\nUser-Agent: ESP8266\r\nX-Api-Key: %s\r\nContent-Type': 'application/json\r\nConnection: close\r\n\r\n";
+const char* OCTOPI_HOST PROGMEM = "octopi.local";
+const char* OCTOPI_JOB_URL PROGMEM = "GET /api/job HTTP/1.0\r\nHost: octopi.local\r\nUser-Agent: ESP8266\r\nX-Api-Key: %s\r\nContent-Type': 'application/json\r\nConnection: close\r\n\r\n";
+const char* OCTOPI_PRINTER_URL PROGMEM = "GET /api/printer HTTP/1.0\r\nHost: octopi.local\r\nUser-Agent: ESP8266\r\nX-Api-Key: %s\r\nContent-Type': 'application/json\r\nConnection: close\r\n\r\n";
 
 //https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=bcb44e369321bfb3f&lastobs=180&from=&to=&filetype=csv&label=omit&layout=seriescolumn
 
-const char* COIN_HOST = "api.coindesk.com";
-const char* COIN_HIST_URL = "GET /v1/bpi/historical/close.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
-const char* COIN_CURR_URL = "GET /v1/bpi/currentprice/USD.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* COIN_HOST PROGMEM = "api.coindesk.com";
+const char* COIN_HIST_URL PROGMEM = "GET /v1/bpi/historical/close.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* COIN_CURR_URL PROGMEM = "GET /v1/bpi/currentprice/USD.json HTTP/1.0\r\nHost: api.coindesk.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
-const char* FED_HOST = "fred.stlouisfed.org";
-const char* OIL_URL = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DCOILWTICO&fq=Daily HTTP/1.0\r\nHost: fred.stlouisfed.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
-const char* TBILL_URL = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DGS10&fq=Daily HTTP/1.0\r\nHost: fred.stlouisfed.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* FED_HOST PROGMEM = "fred.stlouisfed.org";
+const char* OIL_URL PROGMEM = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DCOILWTICO&fq=Daily HTTP/1.0\r\nHost: fred.stlouisfed.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* TBILL_URL PROGMEM = "GET /graph/fredgraph.csv?cosd=%s&mode=fred&id=DGS10&fq=Daily HTTP/1.0\r\nHost: fred.stlouisfed.org\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 
 //used to process stock selection form submission
 //also used to create API GET request
@@ -267,16 +267,16 @@ const int GET_REQUEST_BUFFER_SIZE = 1000;
 const int CLIENT_TIMEOUT = 5000; //http read in ms
 
 //where to check for firmware version
-const char* FIRMWARE_HOST = "raw.githubusercontent.com";
-const char* FW_VERSION_URL = "GET /brownjd/ESPStockTicker/master/data/version.txt";
-const char* FW_GET_SUFFIX = " HTTP/1.0\r\nHost: raw.githubusercontent.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
+const char* FIRMWARE_HOST PROGMEM = "raw.githubusercontent.com";
+const char* FW_VERSION_URL PROGMEM = "GET /brownjd/ESPStockTicker/master/data/version.txt";
+const char* FW_GET_SUFFIX PROGMEM = " HTTP/1.0\r\nHost: raw.githubusercontent.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 //OTA update does not support HTTPS, so had to use amazon for firmware hosting
 
 #ifdef ARDUINO_ESP8266_NODEMCU
-  const char* FW_BIN_URL = "http://espstockticker.s3-website-us-east-1.amazonaws.com/ESPStockTicker.ino.nodemcu.bin";
+  const char* FW_BIN_URL PROGMEM = "http://espstockticker.s3-website-us-east-1.amazonaws.com/ESPStockTicker.ino.nodemcu.bin";
 #endif
 #ifdef ARDUINO_ESP8266_ESP12
-  const char* FW_BIN_URL = "http://espstockticker.s3-website-us-east-1.amazonaws.com/ESPStockTicker.ino.adafruit.bin";
+  const char* FW_BIN_URL PROGMEM = "http://espstockticker.s3-website-us-east-1.amazonaws.com/ESPStockTicker.ino.adafruit.bin";
 #endif
 
 const int KEY_LEN = 36;

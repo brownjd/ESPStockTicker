@@ -25,7 +25,7 @@ void connectWifi()
     delay(1000);
   }
   yield();
-  setupOTA();
+  //setupOTA();
   Serial.println(F("connectWifi()...done"));
 }
 
@@ -58,7 +58,7 @@ void startSoftAP()
     printMsg(F("to configure settings."));
   }
 }
-
+/*
 void setupOTA()
 {
   ArduinoOTA.onStart([]()
@@ -112,3 +112,4 @@ void setupOTA()
   ArduinoOTA.setHostname(hostName);
   ArduinoOTA.begin();
 }
+*/
