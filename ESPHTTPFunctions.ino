@@ -65,25 +65,15 @@ void setTickers()
   int ticker_count = 0;
   for (int i = 0; i < httpServer.args() && i < TICKER_COUNT; i++)
   {
-    String value = httpServer.arg(i);
+    String value = httpServer.arg(tickerName + i);
     value.toUpperCase();
     value.trim();
 
-    //we're expecting an array of values with the same arg name
-    if (httpServer.argName(i) == tickerName)
-    {
-      tickers[ticker_count][0] = '\0';
-      strlcpy(tickers[ticker_count], value.c_str(), MAX_TICKER_SIZE);
-      ticker_count++;
-    }
-  }
-
-  //clear out any empty slots
-  for (; ticker_count < TICKER_COUNT; ticker_count++)
-  {
     tickers[ticker_count][0] = '\0';
+    strlcpy(tickers[ticker_count], value.c_str(), MAX_TICKER_SIZE);
+    ticker_count++;
   }
-
+  
   writeTickerFile(tickers);
   httpServer.send(200, F("text/html"), F("<html><head><script>window.location.replace(\"/\");</script></head><body/></html>"));
 
@@ -132,7 +122,7 @@ void getTickers()
   JsonArray ticArr = doc.createNestedArray(F("tickers"));
   for (int i = 0; i < TICKER_COUNT; i++)
   {
-    Serial.printf_P(PSTR("\tTicker: %s\n"), tickers[i]);
+    Serial.printf_P(PSTR("\tTicker%d: %s\n"), i, tickers[i]);
     ticArr.add(tickers[i]);
   }
 
@@ -590,7 +580,7 @@ bool bufferToFile(WiFiClient *client, const char* host, const char* buf, const i
     while (client->available())
     {
       yield();
-      //int c = client.read();
+      //int c = client->read();
       //Serial.print((char)c);
       //f.write(c);
       f.write(client->read());

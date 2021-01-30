@@ -34,9 +34,8 @@
             for(i = 0; i < root.num_tickers; i++)
             {
               var input = document.createElement("input");
-              input.name = "ticker";
-              if(i < root.tickers.length)
-                input.value = root.tickers[i];
+              input.name = "ticker" + i;
+              input.value = root.tickers[i];
               form.appendChild(input);
               form.appendChild(document.createElement("br"));
             }

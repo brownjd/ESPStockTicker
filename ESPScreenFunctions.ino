@@ -209,12 +209,6 @@ void displayNextPage()
     }
   }
 
-  else if(page < 3)
-  {
-    //no need to do anything
-    //this gets handled later
-  }
-
   //ticker[0] chart
   else if(page == 3)
   {
@@ -348,14 +342,6 @@ bool printTickers()
 {
   Serial.println(F("printTickers()..."));
   int rowToPrint = page * DISPLAY_ROWS;
-    
-  if(rowToPrint > TICKER_COUNT)
-  {
-    Serial.println(F("rowToPrint > TICKER_COUNT - this shouldn't happen."));
-    //we've got past the end. Reset to beginning
-    rowToPrint = 0;
-    page = 0;
-  }
 
   int lastRowToPrint = (page + 1) * DISPLAY_ROWS;
 

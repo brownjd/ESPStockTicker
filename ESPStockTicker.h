@@ -1,4 +1,4 @@
-#define VERSION 2.43
+#define VERSION 2.44
 
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the

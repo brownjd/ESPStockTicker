@@ -32,6 +32,21 @@ void setup()
   cleanupDataFiles();
 
   readSettings();
+/*
+  const int SETTINGS_NUM = 6;
+  const int SETTINGS_SHARES = 0;
+  const int SETTINGS_BITCOIN = 1;
+  const int SETTINGS_TBILLS = 2;
+  const int SETTINGS_OIL = 3;
+  const int SETTINGS_PRINT = 4;
+  const int SETTINGS_BIG_SCREEN = 5;
+  SETTINGS[SETTINGS_SHARES] = true;
+  SETTINGS[SETTINGS_BITCOIN] = false;
+  SETTINGS[SETTINGS_TBILLS] = false;
+  SETTINGS[SETTINGS_OIL] = false;
+  SETTINGS[SETTINGS_PRINT] = false;
+  SETTINGS[SETTINGS_BIG_SCREEN] = true;
+*/
 
   initScreen();
   yield();
@@ -216,7 +231,11 @@ void updatePrices()
           const char* name = quoteItem[F("companyName")];
           //Serial.printf("company name is: %s\n", name);
           strncpy(ticker_name_list[tickerNum], name, TICKER_CO_SIZE-1);
-          ticker_name_list[tickerNum][TICKER_CO_SIZE] = '\0';
+          ticker_name_list[tickerNum][TICKER_CO_SIZE-1] = '\0';
+        }
+        else
+        {
+          Serial.printf_P(PSTR("Skipping blank ticker no: %d\n"), tickerNum); 
         }
       }
     }

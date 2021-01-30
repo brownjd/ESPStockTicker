@@ -114,7 +114,7 @@ int readTickerFile(char tickers[][MAX_TICKER_SIZE])
       //strip off the newline
       temp[size] = '\0';
       strlcpy(tickers[tickerNo], temp, MAX_TICKER_SIZE);
-      //Serial.printf_P(PSTR("%sTicker: %s\n", tickers[tickerNo]), ERROR_MSG_INDENT);
+      //Serial.printf_P(PSTR("%sTicker: %s\n"), ERROR_MSG_INDENT, tickers[tickerNo);
       tickerNo++;
     }
     
