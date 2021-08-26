@@ -30,18 +30,16 @@ Build with the following board settings:
 The project makes use of the following libraries (latest version tested):
 
 Board - Use board manager to install
-- ESP8266Wifi (2.5.2) - note, if you are upgrading from 2.4.x, make sure to wipe the flash or SPIFFS won't work correctly.
+- ESP8266Wifi (3.0.2) - note, if you are upgrading from 2.4.x, make sure to wipe the flash or SPIFFS won't work correctly.
 
 Libraries - Use library manager to install
-- ArduinoJson (6.17.2)
-- Adafruit BusIO (1.7.1)
-- Adafruit ST7735 graphics driver (1.6.0)
-- Adafruit ILI9341 graphics driver (1.5.6)
-- Adafruit HX8357 graphics driver (1.1.10)
-- Adafruit GFX graphics library (1.10.4)
-- Arduino OTA (part of ESP8266Wifi)
+- ArduinoJson (6.18.3)
+- Adafruit ST7735 graphics driver (1.7.3)
+- Adafruit ILI9341 graphics driver (1.5.9)
+- Adafruit HX8357 graphics driver (1.1.11)
+- Adafruit GFX graphics library (1.10.10)
 - elapsedMillis (1.0.6)
-- Time (1.6.0)
+- Time (1.6.1)
 
 External APIs
 - IEX Trading API for real time stock information (https://iextrading.com/developer/docs/)

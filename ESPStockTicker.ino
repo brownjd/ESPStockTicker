@@ -555,7 +555,6 @@ bool updatePrinterStatus(bool *operational, bool *printing, bool *paused, float 
         case DeserializationError::EmptyInput:
         case DeserializationError::IncompleteInput:
         case DeserializationError::NoMemory:
-        case DeserializationError::NotSupported:
         case DeserializationError::TooDeep:
         default:
           printStatusMsg(F("getOctoPiPrinterStatus parse error. "));

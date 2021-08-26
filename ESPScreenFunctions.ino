@@ -1,8 +1,8 @@
 
-#ifdef ARDUINO_ESP8266_ESP12
+#ifdef ARDUINO_ESP8266_ADAFRUIT_HUZZAH
 Adafruit_SPITFT *tft = NULL;
 #endif
-#ifdef ARDUINO_ESP8266_NODEMCU
+#ifdef ARDUINO_ESP8266_NODEMCU_ESP12E
 ST7735_REV *tft = new ST7735_REV(TFT_CS, TFT_DC, TFT_RST);
 #endif
 
@@ -11,8 +11,8 @@ int yPos = 0;
 void initScreen()
 {
   
-#ifdef ARDUINO_ESP8266_ESP12
-
+#ifdef ARDUINO_ESP8266_ADAFRUIT_HUZZAH
+  
   //This method works on a cold start, but is unrealiable after a crash and reboot
   //This will check for either an HX8357 or ILI9341 based on the chip id
   //I had to create a dummy tft class to leverage the SPI methods to query
@@ -67,7 +67,7 @@ void initScreen()
   tft->begin(0);
 #endif
 
-#ifdef ARDUINO_ESP8266_NODEMCU
+#ifdef ARDUINO_ESP8266_NODEMCU_ESP12E
 
   tft = new ST7735_REV(TFT_CS, TFT_DC, TFT_RST);
 
@@ -78,25 +78,25 @@ void initScreen()
   bool yellow = false;
   for(int i = 0; i < YELLOW_TAB_SIZE; i++)
   {
-    if(strcmp(WiFi.macAddress().c_str(), YELLOW_TABS[i]) == 0)
+    if(strcmp_P(WiFi.macAddress().c_str(), YELLOW_TABS[i]) == 0)
     {
       //means we have a goofed up yellow tab screen that
       //requires special orientation handling
+      Serial.println("YELLOW_TAB: true");
       yellow = true;
       tft->initR(INITR_YELLOWTAB);
-      Serial.println("YELLOW_TAB: true");
     }
   }
 
   for(int i = 0; i < YELLOW_TAB_NON_REVERSED_SIZE; i++)
   {
-    if(strcmp(WiFi.macAddress().c_str(), YELLOW_TABS_NON_REVERSED[i]) == 0)
+    if(strcmp_P(WiFi.macAddress().c_str(), YELLOW_TABS_NON_REVERSED[i]) == 0)
     {
       //means we have a goofed up yellow tab screen that
       //requires special orientation handling
+      Serial.println("YELLOW_TAB_NON_REVERSED: true");
       yellow = true;
       tft->initR(INITR_YELLOWTAB_NON_REVERSED) ;
-      Serial.println("YELLOW_TAB_NON_REVERSED: true");
     }
   }
 
@@ -105,12 +105,15 @@ void initScreen()
   // mirrored backwards text, so I had to special case them 
   // by deriving from Adafruit's ST7735 class. Hence the new
   // YELLOWTAB type and ST7735_REV class 
-  if(!yellow) tft->initR(INITR_BLACKTAB);
+  if(!yellow) 
+  {
+    tft->initR(INITR_BLACKTAB);
+  }
 
   bool flipped = false;
   for(int i = 0; i < ROTATION_SIZE; i++)
   {
-    if(strcmp(WiFi.macAddress().c_str(), ROTATION_OVERRIDES[i]) == 0)
+    if(strcmp_P(WiFi.macAddress().c_str(), ROTATION_OVERRIDES[i]) == 0)
     {
       //means we have a wrisky type screen instead of hitlego
       //instead of orientation 1, we do 3.
@@ -121,7 +124,7 @@ void initScreen()
   
   (flipped) ? tft->setRotation(3) : tft->setRotation(1);
 #endif
-#ifdef ARDUINO_ESP8266_ESP12
+#ifdef ARDUINO_ESP8266_ADAFRUIT_HUZZAH
   tft->setRotation(3);
 #endif
   tft->fillScreen(TFT_BLACK);
@@ -416,7 +419,7 @@ bool printTicker(char tickers[][MAX_TICKER_SIZE], int tickerNum)
       tft->setCursor(COLUMN_1, fontYPos);
       tft->print(price);
 
-#ifdef ARDUINO_ESP8266_ESP12
+#ifdef ARDUINO_ESP8266_ADAFRUIT_HUZZAH
       if(SETTINGS[SETTINGS_BIG_SCREEN])
       {
         tft->setCursor(COLUMN_1_5, fontYPos);

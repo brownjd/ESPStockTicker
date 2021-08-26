@@ -3,11 +3,11 @@
 //This supports an ST7735 with a custom
 //PCB or an ILI9341 screen using the
 //Adafruit Featherwing and Huzzah boards
-//NodeMCU ARDUINO_ESP8266_NODEMCU -- this assumes an ST7735 display
-//Huzzah ARDUINO_ESP8266_ESP12 -- this assumes an ILI9341 on a Featherwing
+//NodeMCU ARDUINO_ESP8266_NODEMCU_ESP12E -- this assumes an ST7735 display
+//Huzzah ARDUINO_ESP8266_ADAFRUIT_HUZZAH -- this assumes an ILI9341 on a Featherwing
 //these get set by the IDE at build time when you pick the board
 
-#ifdef ARDUINO_ESP8266_NODEMCU
+#ifdef ARDUINO_ESP8266_NODEMCU_ESP12E
   #include "ST7735_REV.h"
   #define SCREEN_WIDTH ST7735_TFTHEIGHT_160
   #define SCREEN_HEIGHT ST7735_TFTHEIGHT_128
@@ -108,7 +108,7 @@
   const char* COIN_LABEL PROGMEM = "Bitcoin";
 #endif
 
-#ifdef ARDUINO_ESP8266_ESP12
+#ifdef ARDUINO_ESP8266_ADAFRUIT_HUZZAH
   #include "Generic_SPI_TFT.h"
   #include "Adafruit_ILI9341.h"
   #include "Adafruit_HX8357.h"
@@ -272,10 +272,10 @@ const char* FW_VERSION_URL PROGMEM = "GET /brownjd/ESPStockTicker/master/data/ve
 const char* FW_GET_SUFFIX PROGMEM = " HTTP/1.0\r\nHost: raw.githubusercontent.com\r\nUser-Agent: ESP8266\r\nConnection: close\r\n\r\n";
 //OTA update does not support HTTPS, so had to use amazon for firmware hosting
 
-#ifdef ARDUINO_ESP8266_NODEMCU
+#ifdef ARDUINO_ESP8266_NODEMCU_ESP12E
   const char* FW_BIN_URL PROGMEM = "http://espstockticker.s3-website-us-east-1.amazonaws.com/ESPStockTicker.ino.nodemcu.bin";
 #endif
-#ifdef ARDUINO_ESP8266_ESP12
+#ifdef ARDUINO_ESP8266_ADAFRUIT_HUZZAH
   const char* FW_BIN_URL PROGMEM = "http://espstockticker.s3-website-us-east-1.amazonaws.com/ESPStockTicker.ino.adafruit.bin";
 #endif
 

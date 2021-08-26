@@ -537,7 +537,8 @@ void checkAvailableFirmwareVersion()
 
 void updateFirmware()
 {
-  if (!ESPhttpUpdate.update(FW_BIN_URL))
+  WiFiClient client;
+  if (!ESPhttpUpdate.update(client, FW_BIN_URL))
   {
     if (ESPhttpUpdate.getLastError() == 11)
     {
