@@ -174,7 +174,7 @@ void loop()
       
       sinceOctoPiUpdate = 0;
     }
-
+    
     //page refresh
     if(sincePrint >= MAX_PAGE_INTERVAL)
     {

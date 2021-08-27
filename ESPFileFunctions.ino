@@ -6,6 +6,7 @@ void cleanupDataFiles()
   SPIFFS.remove(KEY_STATS_FILE);
   SPIFFS.remove(TBILL_HIST_FILE);
   SPIFFS.remove(OIL_HIST_FILE);
+  SPIFFS.remove(COIN_HIST_FILE);
   SPIFFS.remove(OCTOPI_PRINTER_FILE);
   SPIFFS.remove(OCTOPI_JOB_FILE);
   SPIFFS.remove(FW_REMOTE_VERSION_FILE);

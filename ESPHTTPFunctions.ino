@@ -304,7 +304,7 @@ bool displayQuery()
 {
   Serial.println(F("displayQuery()..."));
   bool ret = true;
-  printStatusMsg(F("Getting time."));
+  printStatusMsg(F("\tGetting time."));
   WiFiClient client;
   if(getConnection(&client, TIME_HOST, HTTP_PORT, TIME_URL))
   {
@@ -314,11 +314,11 @@ bool displayQuery()
     {
       //"datetime":"2020-10-28T14:16:41.499812-05:00"
       const char *dateTimeStr = jsonDoc[F("datetime")];
-      Serial.printf("datetime: %s\n", dateTimeStr);
+      Serial.printf("\tdatetime: %s\n", dateTimeStr);
 
       int hour = 0;
       sscanf(dateTimeStr, "%*d-%*d-%*dT%d:%*d:%*d", &hour);
-      Serial.printf("Hour is: %d\n", hour);
+      Serial.printf("\tHour is: %d\n", hour);
 
       ret = (hour > 8 && hour < 20);
     }
@@ -428,10 +428,7 @@ bool queryCoinCurrent()
   //Serial.printf_P(PSTR("\tBitCoin GET URL: %s\n"), COIN_CURR_URL);
 
   WiFiClientSecure client;
-  //FIX suggested by https://github.com/esp8266/Arduino/issues/4826#issuecomment-491813938 that worked. Seems like a bug to me.
-  client.setInsecure();
-  client.setNoDelay(true);
-  client.setCiphersLessSecure();
+  setupSecureClient(&client, COIN_HOST);
   if (getConnection(&client, COIN_HOST, HTTPS_PORT, COIN_CURR_URL))
   {
     DynamicJsonDocument root(1000);
@@ -552,20 +549,29 @@ void updateFirmware()
 
 bool bufferToFile(const char *host, const char *buf, const char* filename)
 {
+  printFreeMem("bufferToFile begin: ");
+  
   WiFiClientSecure client;
-  //FIX suggested by https://github.com/esp8266/Arduino/issues/4826#issuecomment-491813938 that worked. Seems like a bug to me.
-  client.setInsecure();
-  client.setCiphersLessSecure();
-  client.setNoDelay(true);
+  setupSecureClient(&client, host);
+  
   bool ret = bufferToFile(&client, host, buf, HTTPS_PORT, filename);
+  
+  if(!ret)
+  {
+    char dest[500] = "";
+    client.getLastSSLError(dest, 499);
+    Serial.printf_P(PSTR("%sSSL Error: %s\n"), ERROR_MSG_INDENT, dest);
+  }
+
   client.stop();
+  printFreeMem("bufferToFile end: ");
   return ret;
 }
 
 bool bufferToFile(WiFiClient *client, const char* host, const char* buf, const int port, const char* filename)
 {
-  //Serial.println(F("bufferToFile()..."));
-  //Serial.printf_P(PSTR("host: %s, port: %d, url: %s, filename: %s\n"), host, port, buf, filename);
+  Serial.println(F("bufferToFile()..."));
+  Serial.printf_P(PSTR("\tfilename: %s host: %s, port: %d, url: %s,\n"), filename, host, port, buf);
   bool ret = false;
   
   if(getConnection(client, host, port, buf))
@@ -659,4 +665,25 @@ bool getConnection(WiFiClient* client, const char *host, const int port, const c
   
   //Serial.println(F("getConnection()...done"));
   return ret;
+}
+
+void setupSecureClient(WiFiClientSecure *client, const char *host)
+{
+  int mfln_support = false;
+
+  for(int i = 512; i <= 4096 && !mfln_support; i*=2)
+  {
+    mfln_support = client->probeMaxFragmentLength(host, HTTPS_PORT, i);
+    //Serial.printf_P(PSTR("\t\t\tProbing max fragment length: %d result: %d\n"), i, mfln_support);
+    if(mfln_support)
+    {
+      client->setBufferSizes(i, i);
+      Serial.printf_P(PSTR("\tSetting secure client buffer size to: %d\n"), i);
+    }
+  }
+  
+  //Disables certificate checking
+  client->setInsecure();
+  //client.setCiphersLessSecure();
+  client->setNoDelay(true);
 }

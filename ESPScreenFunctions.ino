@@ -27,7 +27,7 @@ void initScreen()
   //if(x == 0xFF || x == 0x80)
   if(SETTINGS[SETTINGS_BIG_SCREEN])
   {
-    Serial.println("Using HX8347");
+    Serial.println("\tUsing HX8347 display driver");
     tft = new Adafruit_HX8357(TFT_CS, TFT_DC);
     
     SCREEN_WIDTH = HX8357_TFTHEIGHT;
@@ -35,7 +35,7 @@ void initScreen()
   }
   else 
   {
-    Serial.println("Using ILI9341");
+    Serial.println("\tUsing ILI9341 display driver");
     tft = new Adafruit_ILI9341(TFT_CS, TFT_DC);
     
     SCREEN_WIDTH = ILI9341_TFTHEIGHT;
