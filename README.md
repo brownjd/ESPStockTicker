@@ -49,6 +49,8 @@ External APIs
 
 # Setup
 
+Due to the demands on the processor and memory by BearSSL, you need to adjust a few build settings. Set the CPU frequency to 160 Mhz instead of the default 80. Also, ESP8266Wifi 3.0.x now allows slightly differnt memory settings [https://arduino-esp8266.readthedocs.io/en/latest/mmu.html], so you may have occasional out of memory errors using the default 32k cache + 32k IRAM. Instead, I recommend option 4: 16KB cache + 32KB IRAM + 16KB 2nd Heap (not shared). YMMV. 
+
 After compiling the source code and uploading to your ESP, it will restart and begin by looking for known WIFI networks. If it can't connect, it will go into softAP mode and create an adhoc wifi network called esp. You can connect to it and navigate to [http://192.168.4.1/wifi]. This page will allow you to configure your wifi settings. You can add multiple wifi networks.
 
 ![WifiScreenshot](images/wifiscreenshot.png)
