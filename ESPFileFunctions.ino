@@ -213,7 +213,7 @@ void readSettings()
   {
     if(!settings_exists)
     {
-      SETTINGS[i] = false;
+      SETTINGS[i] = true;
     }
     else
     {

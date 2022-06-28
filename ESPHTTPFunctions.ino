@@ -559,8 +559,9 @@ bool bufferToFile(const char *host, const char *buf, const char* filename)
   if(!ret)
   {
     char dest[500] = "";
-    client.getLastSSLError(dest, 499);
+    int err = client.getLastSSLError(dest, 499);
     Serial.printf_P(PSTR("%sSSL Error: %s\n"), ERROR_MSG_INDENT, dest);
+    Serial.printf_P(PSTR("%sSSL ErrorNum : %d\n"), ERROR_MSG_INDENT, err);
   }
 
   client.stop();
@@ -568,7 +569,7 @@ bool bufferToFile(const char *host, const char *buf, const char* filename)
   return ret;
 }
 
-bool bufferToFile(WiFiClient *client, const char* host, const char* buf, const int port, const char* filename)
+bool bufferToFile(Client *client, const char* host, const char* buf, const int port, const char* filename)
 {
   Serial.println(F("bufferToFile()..."));
   Serial.printf_P(PSTR("\tfilename: %s host: %s, port: %d, url: %s,\n"), filename, host, port, buf);
@@ -603,7 +604,7 @@ bool bufferToFile(WiFiClient *client, const char* host, const char* buf, const i
   return ret;
 }
 
-bool getConnection(WiFiClient* client, const char *host, const int port, const char *buf)
+bool getConnection(Client* client, const char *host, const int port, const char *buf)
 {
   //Serial.println(F("getConnection()..."));
   bool ret = true;
@@ -618,7 +619,7 @@ bool getConnection(WiFiClient* client, const char *host, const int port, const c
 
     //from https://arduinojson.org/v5/example/http-client/
     // Check HTTP status
-    char status[32] = {0};
+    char status[64] = {0};
     client->readBytesUntil('\r', status, sizeof(status));
     Serial.printf_P(PSTR("%sHTTP Status: %s\n"), ERROR_MSG_INDENT, status);
           
@@ -641,7 +642,15 @@ bool getConnection(WiFiClient* client, const char *host, const int port, const c
         }
       }
     }
-    
+
+    //Payment Required - Probably an IEXCloud error - we've exceeded our credits.
+    if(strstr(status, "402") != NULL)
+    {
+      Serial.printf_P(PSTR("%sHTTP response: %s\n"), ERROR_MSG_INDENT, status);
+      printStatusMsg(F("IEXCloud credits used up?"));
+      return false;
+    }
+
     if(strstr(status, "200") == NULL)
     {
       Serial.printf_P(PSTR("%sUnexpected response: %s\n"), ERROR_MSG_INDENT, status);

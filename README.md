@@ -19,12 +19,13 @@ OR
 
 The code can be compiled in the Arduino IDE provided you have installed the board mamanger, by specifing the URL in the additional boards manager url field in preferences. Currently: [http://arduino.esp8266.com/stable/  package_esp8266com_index.json] - the board you select will determine which graphics libraries are used. So if you get compilation errors, make sure you've picked either NodeMCU 1.0 (ESP 12-E Module) or Adafruit Feather Huzzah ESP8266. The size of dispay is determined at runtime based on the chipset.
 
-Build with the following board settings:
+Build with the following board settings (make sure to select Adafruit Huzzah or Node MCU 1.0):
 - CPU Fequency: 160 Mhz
 - Flash Size: 4M (3M SPIFFS)
 - lwIP Variant: "v2 Lower Memory"
 - VTables: Flash
 - SSL Support: All SSL Ciphers (most compatible)
+- MMU: 32K cache + 32K IRAM (balanced) 
 
 
 The project makes use of the following libraries (latest version tested):
@@ -33,11 +34,11 @@ Board - Use board manager to install
 - ESP8266Wifi (3.0.2) - note, if you are upgrading from 2.4.x, make sure to wipe the flash or SPIFFS won't work correctly.
 
 Libraries - Use library manager to install
-- ArduinoJson (6.18.3)
-- Adafruit ST7735 graphics driver (1.7.3)
-- Adafruit ILI9341 graphics driver (1.5.9)
-- Adafruit HX8357 graphics driver (1.1.11)
-- Adafruit GFX graphics library (1.10.10)
+- ArduinoJson (6.19.4)
+- Adafruit ST7735 graphics driver (1.9.3)
+- Adafruit ILI9341 graphics driver (1.5.11)
+- Adafruit HX8357 graphics driver (1.1.15)
+- Adafruit GFX graphics library (1.11.2)
 - elapsedMillis (1.0.6)
 - Time (1.6.1)
 
